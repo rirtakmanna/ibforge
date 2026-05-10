@@ -1,0 +1,167 @@
+/* src/index.css
+ *
+ * Global reset + base body. Component styling lives in component CSS files.
+ * Brand tokens are defined in variables.css — this file uses them, never hex codes.
+ */
+
+/* ─── Reset ─── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font: var(--text-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  /* Sharp terminal aesthetic — no rounded corners on body or root containers */
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* ─── Custom scrollbar (Brand System §Scroll Behavior) ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-bg-primary);
+}
+
+/* ─── Focus states (keyboard nav only) ─── */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+  transition: outline-color 100ms linear;
+}
+
+/* ─── Reduced motion ─── */
+/*
+ * Project Instructions §Core Architecture Rule 4(a): this block disables all
+ * Framer Motion variants globally and reduces all CSS transitions to ~0ms.
+ * The two scoped @keyframes exceptions (DeliverableUpload indeterminate bar,
+ * ATLAS logo SVG <animateTransform>) declare their own overrides locally.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── ErrorBoundary fallback ─── */
+.error-boundary-fallback {
+  max-width: 640px;
+  margin: var(--space-3xl) auto;
+  padding: var(--space-xl);
+  border: 1px solid var(--color-error-red);
+  background: var(--color-bg-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.error-boundary-fallback h1 {
+  font: var(--text-h3);
+  color: var(--color-error-red);
+}
+
+.error-boundary-fallback p {
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+}
+
+.error-boundary-message {
+  font: var(--text-code);
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.error-boundary-fallback button {
+  align-self: flex-start;
+  font: var(--text-button);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  border: 2px solid var(--color-electric-blue);
+  color: var(--color-electric-blue);
+  background: transparent;
+  padding: 12px 24px;
+  transition:
+    background var(--duration-base) linear,
+    color var(--duration-base) linear;
+}
+
+.error-boundary-fallback button:hover {
+  background: var(--color-electric-blue);
+  color: var(--color-bg-primary);
+}

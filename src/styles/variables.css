@@ -1,0 +1,119 @@
+/*
+ * ATLAS Brand Tokens — variables.css
+ * Source: ATLAS_Brand_System.md v2.0.0
+ *
+ * Token usage notes:
+ *   --color-electric-blue-active:  pressed/active state of electric-blue interactive elements
+ *                                  (e.g. button:active background, nav link click flash)
+ *   --color-text-disabled:         text color for all disabled form fields, locked nav items,
+ *                                  and suppressed labels
+ *   --color-electric-blue-05:      very subtle hover tint where 10% is too strong
+ *                                  (e.g. Upload Zone hover, filter chip default bg)
+ *   --color-electric-blue-03:      logo card hover background only
+ *
+ * Usage rule: NEVER use hex codes in component CSS. Always go through var(--token-name).
+ */
+
+:root {
+  /* ─── Backgrounds ─── */
+  --color-bg-primary: #0a0a0f;
+  --color-bg-secondary: #121218;
+  --color-bg-tertiary: #1a1a24;
+
+  /* ─── Border ─── */
+  --color-border: #1f1f2e;
+
+  /* ─── Text ─── */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #8b8b9a;
+  --color-text-disabled: #4a4a58;
+
+  /* ─── Accents — Electric Blue ─── */
+  --color-electric-blue: #0fa3e0;
+  --color-electric-blue-hover: #0d8ec0;
+  --color-electric-blue-active: #0b79a6;
+  --color-electric-blue-disabled: #063a50;
+  --color-electric-blue-10: rgba(15, 163, 224, 0.1);
+  --color-electric-blue-05: rgba(15, 163, 224, 0.05);
+  --color-electric-blue-03: rgba(15, 163, 224, 0.03);
+
+  /* ─── Accents — Status ─── */
+  --color-success-green: #00ff88;
+  --color-success-green-hover: #00dd75;
+  --color-success-green-30: rgba(0, 255, 136, 0.3);
+  --color-warning-amber: #ffb800;
+  --color-warning-amber-hover: #e6a500;
+  --color-error-red: #ff3366;
+  --color-error-red-hover: #e62958;
+
+  /* ─── Typography — Font Families ─── */
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* ─── Typography — Type Scale ─── */
+  /* Space Grotesk */
+  --text-display: 700 60px/1 var(--font-display);
+  --text-h1: 700 48px/1.1 var(--font-display);
+  --text-h2: 600 30px/1.25 var(--font-display);
+  --text-h3: 600 24px/1.3 var(--font-display);
+
+  /* Inter */
+  --text-body-lg: 400 16px/1.6 var(--font-body);
+  --text-body: 400 14px/1.5 var(--font-body);
+  --text-label: 500 14px/1.4 var(--font-body);
+  --text-button: 500 14px/1.4 var(--font-body);
+  --text-caption: 400 12px/1.4 var(--font-body);
+  --text-micro: 400 10px/1.3 var(--font-body);
+
+  /* JetBrains Mono */
+  --text-data: 400 14px/1.625 var(--font-mono);
+  --text-code: 400 13px/1.5 var(--font-mono);
+  --text-terminal: 400 12px/1.4 var(--font-mono);
+
+  /* ─── Letter-spacing ─── */
+  --tracking-tight: -0.02em;
+  --tracking-tighter: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.1em;
+  --tracking-widest: 0.15em;
+
+  /* ─── Spacing scale (8px base) ─── */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --space-4xl: 96px;
+
+  /* ─── Layout ─── */
+  --container-max: 1280px;
+  --nav-height-desktop: 64px;
+  --nav-height-mobile-top: 48px;
+  --nav-height-mobile-bottom: 56px;
+  --z-nav: 100;
+  --z-tooltip: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+
+  /* ─── Motion ─── */
+  --duration-fast: 80ms;
+  --duration-base: 150ms;
+  --duration-medium: 200ms;
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* ─── Semantic aliases — use these in component CSS for intent clarity ─── */
+:root {
+  --color-interactive: var(--color-electric-blue);
+  --color-interactive-hover: var(--color-electric-blue-hover);
+  --color-interactive-bg: var(--color-electric-blue-10);
+  --color-positive: var(--color-success-green);
+  --color-negative: var(--color-error-red);
+  --color-attention: var(--color-warning-amber);
+  --color-surface: var(--color-bg-secondary);
+  --color-surface-raised: var(--color-bg-tertiary);
+}
