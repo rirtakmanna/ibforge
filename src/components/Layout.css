@@ -45,11 +45,56 @@
   font: var(--text-h3);
   letter-spacing: var(--tracking-tighter);
   color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.layout-brand .layout-brand-word {
+  color: var(--color-text-primary);
+  transition: color var(--duration-base) linear;
+}
+
+.layout-brand:hover .layout-brand-word {
+  color: var(--color-electric-blue);
+}
+
+.layout-brand.is-active .layout-brand-word {
+  color: var(--color-text-primary);
 }
 
 .layout-brand-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
   color: var(--color-electric-blue);
-  font: var(--text-h3);
+}
+
+.layout-brand-mark .layout-logo-static,
+.layout-brand-mark .layout-logo-rotor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* SMIL <animateTransform> on the rotor cannot be stopped via animation-duration:0s.
+   Pausing via animation-play-state is the only mechanism that works for SVG SMIL.
+   Per Core Architecture Rule 4(c): SMIL is the one permitted exception to the
+   "Framer Motion for all animations" rule, and it MUST respect prefers-reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  .layout-brand-mark .layout-logo-rotor animateTransform,
+  .layout-mobile-brand .layout-logo-rotor animateTransform {
+    animation-play-state: paused;
+  }
+  .layout-brand-mark .layout-logo-rotor,
+  .layout-mobile-brand .layout-logo-rotor {
+    display: none;
+  }
 }
 
 .layout-nav {
@@ -158,16 +203,25 @@
 }
 
 .layout-mobile-brand {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
+  flex-shrink: 0;
   color: var(--color-electric-blue);
+  text-decoration: none;
 }
 
-.layout-mobile-brand svg {
+.layout-mobile-brand .layout-logo-static,
+.layout-mobile-brand .layout-logo-rotor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
+  overflow: visible;
 }
 
 .layout-bottom-dock {
@@ -239,6 +293,13 @@
   }
   .layout-main {
     padding: var(--space-lg) var(--space-xl);
+  }
+  /* Tablet: brand collapses to icon-only, mirroring icon-only nav.
+     Wordmark hidden via CSS only — JSX unchanged, so desktop ≥1024px
+     still renders the full lockup. aria-label="ATLAS — Dashboard" on
+     the NavLink keeps screen-reader access to the brand name. */
+  .layout-brand .layout-brand-word {
+    display: none;
   }
 }
 

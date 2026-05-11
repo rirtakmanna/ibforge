@@ -17,6 +17,11 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+
+  /* ATLAS is always dark — do not respect prefers-color-scheme light mode.
+   * Prevents iOS/macOS from inverting form inputs and scrollbars when the OS
+   * is set to system light mode. The terminal aesthetic is brand-defining. */
+  color-scheme: dark;
 }
 
 body {
