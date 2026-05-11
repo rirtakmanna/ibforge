@@ -41,6 +41,10 @@ const EMERGENCY_MODE_TEXT = `Stuck. Answer only:
 Then: build immediately.`;
 
 // ─── All Chats list (AI_Template.md §All Chats) ─────────────────────────────
+// Returns an ARRAY of { number, text } so the JSX can render each chat as
+// its own card with its own Copy button. The operator pastes each chat's
+// text as the FIRST MESSAGE of a fresh Claude Project chat — copying a
+// single concatenated block was the wrong abstraction.
 // Item 8 is conditional on buildOrder ≥ 2. Phase 2A treats every build as
 // the user's first → item 8 excluded. When a future phase adds a real
 // buildOrder flag, gate the push of item 8 on it.
@@ -55,23 +59,19 @@ function buildAllChats(companyName) {
     `Entering IBProjectPhase 6 — Stress Test. Break this model.`,
     // Item 8 omitted: conditional on buildOrder >= 2 — see comment above.
   ];
-  return items.map((text, i) => `${i + 1}. ${text}`).join("\n");
+  return items.map((text, i) => ({ number: i + 1, text }));
 }
 
-// ─── Files to Upload markdown table ─────────────────────────────────────────
-function buildFilesToUploadTable(files) {
-  if (!Array.isArray(files) || files.length === 0) {
-    return "No files specified.";
-  }
-  const header = `| Category | Instruction |\n| --- | --- |`;
-  const rows = files
-    .map((f) => {
-      const cat = String(f.category || "").replace(/\|/g, "\\|");
-      const desc = String(f.description || "").replace(/\|/g, "\\|");
-      return `| ${cat} | ${desc} |`;
-    })
-    .join("\n");
-  return `${header}\n${rows}`;
+// ─── Files to Upload — structured rows for HTML table rendering ─────────────
+// Returns an ARRAY of { category, description }. The operator never pastes
+// this anywhere — they read it and upload the listed files into Claude
+// Project. So no markdown, no Copy button — just a clean HTML table.
+function buildFilesToUploadRows(files) {
+  if (!Array.isArray(files) || files.length === 0) return [];
+  return files.map((f) => ({
+    category: String(f.category || ""),
+    description: String(f.description || ""),
+  }));
 }
 
 // ─── Part 1 — Project Name ──────────────────────────────────────────────────
@@ -216,14 +216,20 @@ export function buildPromptParts(step, company) {
   }
 
   // Required-field check per AI_Template.md §NULL FIELD HANDLING.
+  //
+  // valuationMethods and financialModels are INTENTIONALLY OPTIONAL.
+  // Some company-steps (e.g. M1 accounting workbook extractions like
+  // M1-S16 Infosys, M1-S17 HDFC) have valuationMethods: [] because no
+  // valuation is performed at that stage — the workbook is reopened in
+  // a later module where valuation is added. Treating empty arrays as
+  // "missing" would block every M1 company-step. When these fields are
+  // empty/absent, buildInstructions() renders a fallback line.
   const required = {
     "company.name": company.name,
     "company.sector": company.sector,
     "company.geography": company.geography,
     "company.complexity": company.complexity,
     "company.focusPriorityDo": company.focusPriorityDo,
-    "step.apply.valuationMethods": step.apply && step.apply.valuationMethods,
-    "step.apply.financialModels": step.apply && step.apply.financialModels,
     "step.build.deliverable": step.build && step.build.deliverable,
   };
   for (const [field, value] of Object.entries(required)) {
@@ -245,9 +251,11 @@ export function buildPromptParts(step, company) {
     parts: {
       header: buildHeader(company),
       name: buildProjectName(company),
-      files: buildFilesToUploadTable(company.filesToUpload),
+      // files: ARRAY of { category, description } — rendered as HTML table.
+      files: buildFilesToUploadRows(company.filesToUpload),
       description: buildDescription(company),
       instructions: buildInstructions(step, company),
+      // allChats: ARRAY of { number, text } — one card + one Copy per entry.
       allChats: buildAllChats(company.name),
       emergency: EMERGENCY_MODE_TEXT,
     },
@@ -299,14 +307,114 @@ function PartCard({ partLabel, title, body, isMono = false }) {
   );
 }
 
+// ─── Part 2 card — Files to Upload (HTML table, no Copy button) ─────────────
+// Reference checklist. Operator reads rows and uploads listed files into the
+// Claude Project they are creating. No paste target → no Copy button.
+function FilesTablePart({ partLabel, title, rows }) {
+  return (
+    <section className="cg-panel__part cg-panel__part--files">
+      <header className="cg-panel__part-header">
+        <div className="cg-panel__part-label">{partLabel}</div>
+        <h3 className="cg-panel__part-title">{title}</h3>
+      </header>
+      {rows.length === 0 ? (
+        <p className="cg-panel__files-empty">No files specified.</p>
+      ) : (
+        <div className="cg-panel__files-table-wrap">
+          <table className="cg-panel__files-table">
+            <thead>
+              <tr>
+                <th scope="col" className="cg-panel__files-th cg-panel__files-th--category">
+                  Category
+                </th>
+                <th scope="col" className="cg-panel__files-th">
+                  Instruction
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => (
+                <tr key={`${row.category}-${i}`}>
+                  <td className="cg-panel__files-td cg-panel__files-td--category">
+                    <span
+                      className={`cg-panel__files-tag cg-panel__files-tag--${row.category
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")}`}
+                    >
+                      {row.category}
+                    </span>
+                  </td>
+                  <td className="cg-panel__files-td">{row.description}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Part 5 card — All Chats (one sub-card + one Copy per chat) ─────────────
+// Each chat is pasted as the FIRST MESSAGE of a fresh Claude Project chat.
+// The copied text intentionally omits the "1.", "2." prefix.
+function ChatListPart({ partLabel, title, chats }) {
+  return (
+    <section className="cg-panel__part cg-panel__part--chats">
+      <header className="cg-panel__part-header">
+        <div className="cg-panel__part-label">{partLabel}</div>
+        <h3 className="cg-panel__part-title">{title}</h3>
+        <p className="cg-panel__part-subtitle">
+          Paste each as the first message of a fresh Claude Project chat.
+        </p>
+      </header>
+      <ol className="cg-panel__chat-list">
+        {chats.map((chat) => (
+          <ChatCard key={chat.number} number={chat.number} text={chat.text} />
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+// ─── Single chat card — own Copy button, copies text only (no number prefix) ─
+function ChatCard({ number, text }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      console.error("[CompanyGeneratorPanel] chat copy failed:", err);
+    }
+  };
+
+  return (
+    <li className="cg-panel__chat-card">
+      <div className="cg-panel__chat-card-num">CHAT {number}</div>
+      <p className="cg-panel__chat-card-text">{text}</p>
+      <motion.button
+        type="button"
+        className="cg-panel__copy cg-panel__copy--chat"
+        onClick={handleCopy}
+        aria-label={`Copy chat ${number} text`}
+        animate={{ scale: copied ? 1.02 : 1 }}
+        transition={{ duration: 0.15 }}
+      >
+        {copied ? "COPIED ✓" : "COPY →"}
+      </motion.button>
+    </li>
+  );
+}
+
 // ─── Main component ─────────────────────────────────────────────────────────
 function CompanyGeneratorPanel({ step, company }) {
   const result = useMemo(
     () => buildPromptParts(step, company),
     [step, company],
   );
-
-  const [copiedAll, setCopiedAll] = useState(false);
 
   if (!result.ok) {
     return (
@@ -319,51 +427,18 @@ function CompanyGeneratorPanel({ step, company }) {
 
   const { parts } = result;
 
-  const allPartsText = [
-    parts.header,
-    `\n────── PART 1 — PROJECT NAME ──────\n`,
-    parts.name,
-    `\n────── PART 2 — FILES TO UPLOAD ──────\n`,
-    parts.files,
-    `\n────── PART 3 — PROJECT DESCRIPTION ──────\n`,
-    parts.description,
-    `\n────── PART 4 — INSTRUCTIONS ──────\n`,
-    parts.instructions,
-    `\n────── PART 5 — ALL CHATS ──────\n`,
-    parts.allChats,
-    `\n────── EMERGENCY MODE — paste when stuck ──────\n`,
-    parts.emergency,
-  ].join("\n");
-
-  const handleCopyAll = async () => {
-    try {
-      await navigator.clipboard.writeText(allPartsText);
-      setCopiedAll(true);
-      window.setTimeout(() => setCopiedAll(false), 1500);
-    } catch (err) {
-      console.error("[CompanyGeneratorPanel] copy-all failed:", err);
-    }
-  };
-
   return (
     <div className="cg-panel">
-      <div className="cg-panel__master-actions">
-        <motion.button
-          type="button"
-          className="cg-panel__copy-all"
-          onClick={handleCopyAll}
-          aria-label="Copy all parts in sequence"
-          animate={{ scale: copiedAll ? 1.02 : 1 }}
-          transition={{ duration: 0.15 }}
-        >
-          {copiedAll ? "ALL COPIED ✓" : "COPY ALL PARTS →"}
-        </motion.button>
-      </div>
-
       <pre className="cg-panel__header-block">{parts.header}</pre>
 
       <PartCard partLabel="PART 1" title="Project Name" body={parts.name} />
-      <PartCard partLabel="PART 2" title="Files to Upload" body={parts.files} />
+
+      <FilesTablePart
+        partLabel="PART 2"
+        title="Files to Upload"
+        rows={parts.files}
+      />
+
       <PartCard
         partLabel="PART 3"
         title="Project Description"
@@ -375,7 +450,12 @@ function CompanyGeneratorPanel({ step, company }) {
         body={parts.instructions}
         isMono
       />
-      <PartCard partLabel="PART 5" title="All Chats" body={parts.allChats} />
+
+      <ChatListPart
+        partLabel="PART 5"
+        title="All Chats"
+        chats={parts.allChats}
+      />
 
       <section className="cg-panel__part cg-panel__part--emergency">
         <header className="cg-panel__part-header">

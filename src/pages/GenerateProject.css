@@ -1,0 +1,199 @@
+/* src/pages/GenerateProject.css
+ *
+ * Page shell for /step/:id/generate.
+ * CompanyGeneratorPanel owns the 5-part card styling — this file only
+ * styles the back link, header block, the data-integrity error fallback,
+ * and the redirect flash-guard.
+ *
+ * Brand: ATLAS_Brand_System.md — CSS variables only, no hex codes,
+ * no inline styles, no CSS @keyframes (all motion via Framer Motion).
+ * Animation in this page is handled by Framer Motion on the
+ * <motion.section> in GenerateProject.jsx — no CSS transitions on the
+ * page-level entrance.
+ */
+
+/* ─── Page container ──────────────────────────────────────────────────── */
+
+.generate-project {
+  width: 100%;
+  max-width: var(--container-max-width, 1280px);
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-xl) var(--space-4xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+/* Empty flash-guard rendered during redirect tick. Reserves vertical
+ * space so the layout does not jump while react-router replaces the URL. */
+.generate-project__redirect {
+  min-height: 50vh;
+  width: 100%;
+}
+
+/* ─── Back link ───────────────────────────────────────────────────────── */
+
+.generate-project__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  align-self: flex-start;
+  padding: var(--space-2xs) var(--space-xs);
+  margin-left: calc(var(--space-xs) * -1);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-mono);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition:
+    color var(--duration-fast) var(--easing-standard),
+    background-color var(--duration-fast) var(--easing-standard);
+}
+
+.generate-project__back:hover,
+.generate-project__back:focus-visible {
+  color: var(--color-accent-primary);
+  background-color: var(--color-bg-hover);
+}
+
+.generate-project__back:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+/* ─── Header block ────────────────────────────────────────────────────── */
+
+.generate-project__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.generate-project__eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-mono);
+  text-transform: uppercase;
+  color: var(--color-accent-primary);
+  margin: 0;
+}
+
+.generate-project__title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.generate-project__subtitle {
+  font-family: var(--font-body);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 64ch;
+}
+
+.generate-project__subtitle-em {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-mono);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-elevated);
+  padding: var(--space-3xs) var(--space-2xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* ─── Error fallback (missing company in companiesData) ───────────────── */
+
+.generate-project__error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-xl);
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-danger);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+}
+
+.generate-project__error-label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-mono);
+  text-transform: uppercase;
+  color: var(--color-danger);
+  margin: 0;
+}
+
+.generate-project__error-message {
+  font-family: var(--font-body);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-relaxed);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.generate-project__error-message code {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-accent-primary);
+  background-color: var(--color-bg-primary);
+  padding: var(--space-3xs) var(--space-2xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* ─── Responsive — Tablet (768px–1024px) ──────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .generate-project {
+    padding: var(--space-xl) var(--space-lg) var(--space-3xl);
+    gap: var(--space-xl);
+  }
+
+  .generate-project__title {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+/* ─── Responsive — Mobile (≤768px) ────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .generate-project {
+    /* Bottom padding clears the sticky bottom dock */
+    padding: var(--space-lg) var(--space-md)
+      calc(var(--bottom-dock-height, 64px) + var(--space-2xl));
+    gap: var(--space-lg);
+  }
+
+  .generate-project__title {
+    font-size: var(--font-size-xl);
+  }
+
+  .generate-project__subtitle {
+    font-size: var(--font-size-sm);
+  }
+
+  .generate-project__subtitle-em {
+    /* Allow the company name chip to wrap inline on narrow widths */
+    display: inline-block;
+    margin-top: var(--space-3xs);
+  }
+
+  .generate-project__error {
+    padding: var(--space-lg);
+  }
+}

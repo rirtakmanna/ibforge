@@ -195,3 +195,189 @@
     justify-content: stretch;
   }
 }
+
+/* ─── Part 2 — Files to Upload — HTML table ──────────────────────────────── */
+
+.cg-panel__part--files .cg-panel__files-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-primary);
+}
+
+.cg-panel__files-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.cg-panel__files-th {
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-mono);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background-color: var(--color-bg-elevated);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.cg-panel__files-th--category {
+  width: 12rem;
+}
+
+.cg-panel__files-td {
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border-subtle);
+  line-height: var(--line-height-relaxed);
+  vertical-align: top;
+}
+
+.cg-panel__files-table tbody tr:last-child .cg-panel__files-td {
+  border-bottom: none;
+}
+
+.cg-panel__files-td--category {
+  white-space: nowrap;
+}
+
+.cg-panel__files-tag {
+  display: inline-block;
+  padding: var(--space-3xs) var(--space-xs);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-mono);
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+}
+
+/* Category color variants — semantic, all via brand tokens */
+.cg-panel__files-tag--mandatory {
+  color: var(--color-accent-primary);
+  border-color: var(--color-accent-primary);
+}
+
+.cg-panel__files-tag--conditional {
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.cg-panel__files-tag--excel-file {
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.cg-panel__files-tag--do-not-upload {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.cg-panel__files-empty {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  padding: var(--space-lg);
+  margin: 0;
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+/* ─── Part 5 — All Chats — list of cards ─────────────────────────────────── */
+
+.cg-panel__part-subtitle {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: var(--space-2xs) 0 0;
+  line-height: var(--line-height-relaxed);
+}
+
+.cg-panel__chat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.cg-panel__chat-card {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.cg-panel__chat-card-num {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--letter-spacing-mono);
+  text-transform: uppercase;
+  color: var(--color-accent-primary);
+}
+
+.cg-panel__chat-card-text {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+}
+
+.cg-panel__copy--chat {
+  /* Reuses .cg-panel__copy base styling; this is just for any chat-specific
+   * overrides (none currently — kept as a hook for future divergence). */
+}
+
+/* ─── Responsive — Tablet (≤1024px) ──────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .cg-panel__files-th--category {
+    width: 9rem;
+  }
+
+  .cg-panel__chat-card {
+    grid-template-columns: 6rem 1fr auto;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+}
+
+/* ─── Responsive — Mobile (≤768px) ───────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .cg-panel__files-th,
+  .cg-panel__files-td {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .cg-panel__files-th--category {
+    width: auto;
+  }
+
+  /* Chat cards: stack vertically — CHAT N on top, text in middle, COPY on bottom-right */
+  .cg-panel__chat-card {
+    grid-template-columns: 1fr;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+  }
+
+  .cg-panel__copy--chat {
+    justify-self: end;
+  }
+}
