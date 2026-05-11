@@ -96,7 +96,7 @@
 /* ── Complete state ── */
 
 .phase-progress-item.is-complete .phase-progress-link {
-  border-color: rgba(0, 255, 136, 0.3);
+  border-color: var(--color-success-green-30);
 }
 
 .phase-progress-item.is-complete .phase-progress-link:hover {

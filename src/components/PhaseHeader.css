@@ -70,13 +70,6 @@
   opacity: 0.8;
 }
 
-/* Tablet — slightly tighter spacing, title can still ellipsis. */
-@media (max-width: 1023px) and (min-width: 768px) {
-  .phase-header__label {
-    font-size: 12px;
-  }
-}
-
 /* Mobile — stack the count below the label if title is long. */
 @media (max-width: 767px) {
   .phase-header {
