@@ -1,0 +1,105 @@
+/* src/components/AccordionSection.css
+ * Sharp corners, brand tokens, no hex codes.
+ */
+
+.accordion {
+  /* Each section sits as its own bordered card; gap between sections is set
+   * by the parent (Roadmap.css gives the list a flex gap). */
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  width: 100%;
+  transition: border-color 150ms linear;
+}
+
+.accordion:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.accordion--open {
+  /* Slight emphasis when open — keeps the visual hierarchy clear. */
+  border-color: var(--color-text-secondary);
+}
+
+/* Trigger — full-width button. Looks like a header strip, behaves like a button. */
+.accordion__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md, 16px);
+  width: 100%;
+  padding: var(--space-md, 16px) var(--space-lg, 24px);
+  margin: 0;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: background-color 150ms linear;
+}
+
+.accordion__trigger:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.accordion__trigger:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: -2px;
+}
+
+.accordion__header-slot {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.accordion__chevron {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--color-text-secondary);
+  transition: color 150ms linear;
+}
+
+.accordion__trigger:hover .accordion__chevron {
+  color: var(--color-text-primary);
+}
+
+/* Body — Framer Motion controls height/opacity. We give it the visual frame. */
+.accordion__body {
+  /* overflow is set inline by motion.div so AnimatePresence height animation
+   * works correctly. Don't override here. */
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+}
+
+.accordion__body-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  /* No outer padding — StepCard owns its own padding so cards sit edge-to-edge
+   * with a divider between them via their own borders. */
+}
+
+/* Adjacent StepCards inside an accordion body — collapse the double border
+ * between cards into a single 1px border by removing the top border on all
+ * cards except the first. This keeps the visual rhythm tight. */
+.accordion__body-inner > .step-card + .step-card {
+  border-top: 0;
+}
+
+/* Mobile — tighter trigger padding. */
+@media (max-width: 767px) {
+  .accordion__trigger {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .accordion__chevron {
+    width: 20px;
+    height: 20px;
+  }
+}

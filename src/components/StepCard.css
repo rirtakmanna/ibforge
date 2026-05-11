@@ -1,0 +1,242 @@
+/* src/components/StepCard.css
+ * Brand System §Cards / §Step Card / §Status System / §Learn Chain Visual.
+ * Sharp corners. Brand tokens only.
+ */
+
+.step-card {
+  display: block;
+  width: 100%;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  /* Left border slot — overridden by .step-card--chain to 3px Electric Blue. */
+  border-left: 1px solid var(--color-border);
+  position: relative;
+  transition:
+    border-color 150ms linear,
+    background-color 150ms linear;
+}
+
+/* Link wrapper inside the card — fills the card so the entire row is the hit target. */
+.step-card__link {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: var(--space-md, 16px);
+  padding: var(--space-md, 16px) var(--space-lg, 24px);
+  min-height: 56px;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* When locked, the same grid structure but rendered on the outer div (no link). */
+.step-card--locked {
+  cursor: not-allowed;
+}
+
+.step-card--locked > .step-card__code,
+.step-card--locked > .step-card__type,
+.step-card--locked > .step-card__title,
+.step-card--locked > .step-card__status {
+  /* Apply the same grid layout when there's no inner <Link>. */
+}
+
+.step-card--locked {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  align-items: center;
+  gap: var(--space-md, 16px);
+  padding: var(--space-md, 16px) var(--space-lg, 24px);
+  min-height: 56px;
+}
+
+/* Position code — JetBrains Mono, Electric Blue (ACTIVE), Muted (LOCKED), Success Green (COMPLETE). */
+.step-card__code {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  color: var(--color-electric-blue);
+  flex: 0 0 auto;
+}
+
+/* Type badge — small uppercase pill, neutral by default; per-type accent below. */
+.step-card__type {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.step-card__type--company-step {
+  color: var(--color-electric-blue);
+  border-color: var(--color-electric-blue);
+}
+
+.step-card__type--learn {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
+}
+
+.step-card__type--watch {
+  color: var(--color-warning-amber);
+  border-color: var(--color-warning-amber);
+}
+
+/* Title — Inter, white (or muted when locked). */
+.step-card__title {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+}
+
+/* Status slot — pushes to the right. */
+.step-card__status {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ─── State: ACTIVE ─────────────────────────────────────────────── */
+.step-card--active {
+  /* Electric Blue accent left border. 3px wide; compensate padding so content alignment stays put. */
+  border-left: 3px solid var(--color-electric-blue);
+}
+
+.step-card--active .step-card__link {
+  padding-left: calc(
+    var(--space-lg, 24px) - 2px
+  ); /* 3px border - 1px default = 2px compensation */
+}
+
+.step-card--active:hover {
+  border-color: var(--color-electric-blue);
+  background: var(--color-bg-tertiary);
+}
+
+.step-card--active:hover .step-card__title {
+  color: var(--color-text-primary);
+}
+
+/* ─── State: COMPLETE ───────────────────────────────────────────── */
+.step-card--complete .step-card__code {
+  color: var(--color-success-green);
+}
+
+.step-card--complete:hover {
+  border-color: var(--color-success-green);
+  background: var(--color-bg-tertiary);
+}
+
+/* ─── State: LOCKED ─────────────────────────────────────────────── */
+.step-card--locked {
+  background: var(--color-bg-secondary);
+  opacity: 0.6;
+}
+
+.step-card--locked .step-card__code {
+  color: var(--color-text-disabled);
+}
+
+.step-card--locked .step-card__title {
+  color: var(--color-text-disabled);
+}
+
+.step-card--locked .step-card__type {
+  color: var(--color-text-disabled);
+  border-color: var(--color-border);
+}
+
+.step-card--locked:hover {
+  /* No hover lift when locked. */
+  border-color: var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+/* ─── Pattern B (Continuous Case Study) Left Border Accent ──────── */
+/* Per Brand System §Learn Chain Visual Part 1.
+ * Overrides the 1px / 3px left border from base / --active.
+ * Padding-left compensated so card content alignment is unchanged. */
+.step-card--chain {
+  border-left: 3px solid var(--color-electric-blue);
+}
+
+.step-card--chain .step-card__link,
+.step-card--chain.step-card--locked {
+  padding-left: calc(var(--space-lg, 24px) - 2px);
+}
+
+/* When a Pattern B step is ALSO active, the left border is already 3px Electric Blue
+ * from --active. Keep the chain class precedence consistent — they reinforce. */
+.step-card--chain.step-card--active {
+  border-left: 3px solid var(--color-electric-blue);
+}
+
+/* ─── Focus visibility — keyboard navigation ────────────────────── */
+.step-card__link:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: -2px;
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .step-card__link,
+  .step-card--locked {
+    grid-template-columns: auto auto 1fr auto;
+    gap: 12px;
+    padding: 14px 20px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Mobile: stack title onto its own row to avoid ellipsis truncation. */
+  .step-card__link,
+  .step-card--locked {
+    grid-template-columns: auto auto auto;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "code type   status"
+      "title title title";
+    gap: 8px 12px;
+    padding: 12px 16px;
+    min-height: 0;
+  }
+
+  .step-card__code {
+    grid-area: code;
+    font-size: 12px;
+  }
+
+  .step-card__type {
+    grid-area: type;
+    height: 20px;
+    font-size: 9px;
+    padding: 0 6px;
+  }
+
+  .step-card__status {
+    grid-area: status;
+  }
+
+  .step-card__title {
+    grid-area: title;
+    white-space: normal;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+}

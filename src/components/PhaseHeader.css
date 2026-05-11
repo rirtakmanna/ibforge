@@ -1,0 +1,97 @@
+/* src/components/PhaseHeader.css
+ * Brand System §Phase Progress Box label format.
+ * Sharp corners. Brand tokens only.
+ */
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md, 16px);
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+
+.phase-header__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--color-text-secondary);
+  transition: color 150ms linear;
+}
+
+.phase-header__module-num {
+  flex: 0 0 auto;
+  color: var(--color-electric-blue);
+}
+
+.phase-header__dash {
+  flex: 0 0 auto;
+  opacity: 0.6;
+}
+
+.phase-header__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-primary);
+}
+
+.phase-header__count {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* Complete state — Brand System §Status System green palette. */
+.phase-header--complete .phase-header__module-num,
+.phase-header--complete .phase-header__title,
+.phase-header--complete .phase-header__count {
+  color: var(--color-success-green);
+}
+
+.phase-header--complete .phase-header__dash {
+  color: var(--color-success-green);
+  opacity: 0.8;
+}
+
+/* Tablet — slightly tighter spacing, title can still ellipsis. */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .phase-header__label {
+    font-size: 12px;
+  }
+}
+
+/* Mobile — stack the count below the label if title is long. */
+@media (max-width: 767px) {
+  .phase-header {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .phase-header__label {
+    flex: 1 1 100%;
+    font-size: 11px;
+  }
+
+  .phase-header__count {
+    flex: 1 1 100%;
+    text-align: left;
+    font-size: 10px;
+  }
+}
