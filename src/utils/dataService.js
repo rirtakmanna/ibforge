@@ -309,6 +309,46 @@ export function getScheduledLinkedInPosts() {
 }
 
 /**
+ * Updates the status of a single scheduled LinkedIn post.
+ * Accepts status: "Scheduled" | "Posted".
+ * Overdue is derived at render time (status === "Scheduled" && scheduledFor < today)
+ * and is NOT a stored value.
+ *
+ * When flipping to "Posted": stamps postedAt with current ISO timestamp.
+ * When flipping to "Scheduled": clears postedAt (post un-marked).
+ *
+ * Returns { ok: true, post } on success.
+ * Throws on invalid postId, missing post, or invalid status.
+ */
+export function setLinkedInPostStatus(postId, status) {
+  if (typeof postId !== "string" || postId.length === 0) {
+    throw new Error("[dataService] setLinkedInPostStatus requires postId string");
+  }
+  if (status !== "Scheduled" && status !== "Posted") {
+    throw new Error(
+      `[dataService] setLinkedInPostStatus status must be "Scheduled" or "Posted", got: ${String(status)}`,
+    );
+  }
+
+  const all = getScheduledLinkedInPosts();
+  const index = all.findIndex((p) => p.id === postId);
+  if (index === -1) {
+    throw new Error(`[dataService] LinkedIn post not found: ${postId}`);
+  }
+
+  const current = all[index];
+  const updated = {
+    ...current,
+    status,
+    postedAt: status === "Posted" ? new Date().toISOString() : null,
+  };
+
+  const next = [...all.slice(0, index), updated, ...all.slice(index + 1)];
+  writeJson(KEY_LINKEDIN_POSTS, next);
+  return { ok: true, post: updated };
+}
+
+/**
  * Schedules LinkedIn posts for a step. Called on company-step Mark Complete.
  * Validates stepId. Validates posts is an array of { day, content }.
  * scheduledFor = completionDate + day offset.
@@ -373,6 +413,7 @@ if (typeof window !== "undefined" && !import.meta.env.PROD) {
     getUIState,
     getScheduledLinkedInPosts,
     scheduleLinkedInPosts,
+    setLinkedInPostStatus,
     resetProgress,
     getSchemaVersion,
     setSchemaVersion,

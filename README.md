@@ -179,7 +179,7 @@ MIT — see [LICENSE][license-url]
 
 ### Author
 
-**[Your Name]**
+**[Rirtak Manna]**
 [LinkedIn](https://linkedin.com/in/ritak) · [GitHub](https://github.com/rirtakmanna)
 
 [![GitHub Stats](https://github-readme-stats.vercel.app/api?username=rirtakmanna&show_icons=true&theme=dark&hide_border=true&title_color=0FA3E0&text_color=ffffff&bg_color=0a0a0f)](https://github.com/rirtakmanna)

@@ -1,0 +1,349 @@
+/* src/pages/LinkedInPosts.css
+ *
+ * Sub-page of /step/:id/linkedin. Layout mirrors GenerateProject:
+ *   back link → header → divider → list of post cards → empty state.
+ *
+ * All colors, fonts, spacing via CSS variables from variables.css.
+ * No hex codes. No inline brand values. No CSS @keyframes
+ * (Framer Motion handles animation on the card + buttons).
+ */
+
+/* ─── Page shell ──────────────────────────────────────────────────────── */
+
+.lip {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg) var(--space-2xl);
+  color: var(--color-text-primary);
+}
+
+.lip__back {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  margin-bottom: var(--space-lg);
+  transition: color 0.15s ease;
+}
+
+.lip__back:hover,
+.lip__back:focus-visible {
+  color: var(--color-accent-primary);
+  outline: none;
+}
+
+.lip__missing {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  padding: var(--space-lg) 0;
+}
+
+/* ─── Header ──────────────────────────────────────────────────────────── */
+
+.lip__header {
+  margin-bottom: var(--space-lg);
+}
+
+.lip__position {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+.lip__title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-sm) 0;
+}
+
+.lip__subtitle {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.lip__divider {
+  border: 0;
+  border-top: 1px solid var(--color-border-subtle);
+  margin: var(--space-lg) 0 var(--space-xl) 0;
+}
+
+/* ─── Empty state ─────────────────────────────────────────────────────── */
+
+.lip__empty {
+  padding: var(--space-xl);
+  border: 1px dashed var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.lip__empty-text {
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ─── Posts list ──────────────────────────────────────────────────────── */
+
+.lip__posts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* ─── Card ────────────────────────────────────────────────────────────── */
+
+.lip__card {
+  background-color: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.lip__card-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.lip__card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.lip__post-num {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+}
+
+.lip__type-badge {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  color: var(--color-accent-primary);
+  border: 1px solid var(--color-accent-primary);
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+}
+
+/* Status chip — colour by variant. Background uses a tinted token if
+ * present; falls back to transparent with coloured border + text. */
+.lip__chip {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid currentColor;
+  background-color: transparent;
+}
+
+.lip__chip--scheduled {
+  color: var(--color-text-muted);
+}
+
+.lip__chip--posted {
+  color: var(--color-success);
+}
+
+.lip__chip--overdue {
+  color: var(--color-warning);
+}
+
+.lip__schedule-line {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.lip__card-title {
+  font-family: var(--font-display);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* ─── Body + files sections ───────────────────────────────────────────── */
+
+.lip__section-label {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.12em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  margin-bottom: var(--space-sm);
+}
+
+.lip__body-section,
+.lip__files-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.lip__body {
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: var(--space-md);
+  margin: 0;
+  /* Preserve line breaks + emoji; allow wrap on narrow screens. */
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.lip__files-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.lip__files-item {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding-left: var(--space-md);
+  position: relative;
+}
+
+.lip__files-item::before {
+  content: "·";
+  position: absolute;
+  left: 0;
+  color: var(--color-text-muted);
+}
+
+.lip__files-empty {
+  font-family: var(--font-body);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0;
+}
+
+/* ─── Card actions ────────────────────────────────────────────────────── */
+
+.lip__card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.lip__action {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lip__action:focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+}
+
+.lip__action--primary {
+  background-color: var(--color-accent-primary);
+  color: var(--color-bg-primary);
+  border-color: var(--color-accent-primary);
+}
+
+.lip__action--primary:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.lip__action--secondary {
+  background-color: transparent;
+  color: var(--color-text-primary);
+  border-color: var(--color-border-subtle);
+}
+
+.lip__action--secondary:hover:not(:disabled) {
+  border-color: var(--color-accent-primary);
+  color: var(--color-accent-primary);
+}
+
+.lip__action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Responsive — mobile (≤768px) ────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .lip {
+    padding: var(--space-lg) var(--space-md) var(--space-2xl);
+  }
+
+  .lip__title {
+    font-size: var(--font-size-xl);
+  }
+
+  .lip__card {
+    padding: var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .lip__card-meta {
+    gap: var(--space-xs);
+  }
+
+  .lip__body {
+    max-height: 280px;
+    padding: var(--space-sm);
+    font-size: var(--font-size-sm);
+  }
+
+  .lip__card-actions {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .lip__action {
+    width: 100%;
+  }
+}
