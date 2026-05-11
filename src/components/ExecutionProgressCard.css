@@ -1,0 +1,79 @@
+/* src/components/ExecutionProgressCard.css
+ *
+ * Dashboard Row 1 RIGHT — Execution Progress card.
+ * Brand System §Card + §Section labels.
+ * Sharp corners only.
+ */
+
+.execution-progress-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-lg);
+  padding: var(--space-xl);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ── Header ── */
+
+.execution-progress-card-header {
+  display: flex;
+  align-items: center;
+}
+
+.execution-progress-card-label {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+/* ── Bar slot ── */
+
+.execution-progress-card-bar {
+  width: 100%;
+}
+
+/* ── Counter ── */
+
+.execution-progress-card-counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.execution-progress-card-counter-num {
+  color: var(--color-text-primary);
+}
+
+.execution-progress-card-counter-sep,
+.execution-progress-card-counter-total {
+  color: var(--color-text-secondary);
+}
+
+.execution-progress-card-counter-label {
+  color: var(--color-text-secondary);
+  margin-left: 4px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 767px) {
+  .execution-progress-card {
+    padding: var(--space-lg);
+    gap: var(--space-md);
+  }
+}

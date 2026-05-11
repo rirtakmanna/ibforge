@@ -1,0 +1,176 @@
+/* src/pages/Dashboard.css
+ *
+ * Dashboard — APPROVED DESIGN (Chat 1, binding; see CHAT_HANDOFF.md).
+ *
+ *   Row 1 — 25fr / 75fr
+ *     Left:  PositionCard
+ *     Right: ExecutionProgressCard
+ *
+ *   Row 2 — 75fr / 25fr
+ *     Left:  Module Progress (header strip + PhaseProgressList)
+ *     Right: NextStepCard (content-sized — align-self: start)
+ *
+ * Tablet (768–1023px): Row 1 stays 25/75. Row 2 splits vertically:
+ *   NextStepCard full-width directly under Row 1, then Module Progress full-width below.
+ *
+ * Mobile (<768px): single column stack —
+ *   Current Position → Execution Progress → Next Step → Module Progress.
+ *
+ * Removed: the Phase 1 "EXECUTION STATUS" section-title strip. Its
+ * section-identifier role is now played by ExecutionProgressCard's
+ * internal "EXECUTION PROGRESS" label.
+ *
+ * Sharp corners only. Brand tokens only.
+ */
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  width: 100%;
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Row 1 — Position (25fr) | Execution Progress (75fr)
+ * ────────────────────────────────────────────────────────────── */
+
+.dashboard-row1 {
+  display: grid;
+  grid-template-columns: 25fr 75fr;
+  gap: var(--space-xl);
+  align-items: stretch; /* PositionCard + ExecutionProgressCard match height */
+}
+
+.dashboard-row1-position {
+  min-width: 0; /* prevents grid blowout when child content demands width */
+}
+
+.dashboard-row1-progress {
+  min-width: 0;
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Row 2 — Module Progress (75fr) | NextStepCard (25fr)
+ * ────────────────────────────────────────────────────────────── */
+
+.dashboard-row2 {
+  display: grid;
+  grid-template-columns: 75fr 25fr;
+  gap: var(--space-xl);
+  align-items: start; /* NextStepCard never stretches to match list height */
+}
+
+.dashboard-row2-modules {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+}
+
+.dashboard-row2-next {
+  min-width: 0;
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Module Progress — card-header bar (label left + jump link right)
+ *   Matches Brand System §Step Card pattern: header strip with
+ *   bottom border, body sits below at bg-primary.
+ * ────────────────────────────────────────────────────────────── */
+
+.dashboard-modules-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Module Progress — card body (recessed against the header strip)
+ *   PhaseProgressList sits inside here. Its items keep their own
+ *   bg-secondary so they pop against this bg-primary body.
+ * ────────────────────────────────────────────────────────────── */
+
+.dashboard-modules-body {
+  padding: var(--space-lg);
+  background: var(--color-bg-primary);
+}
+
+.dashboard-modules-label {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+.dashboard-modules-jump {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-electric-blue);
+  letter-spacing: var(--tracking-wide);
+  text-decoration: none;
+  transition: color 150ms linear;
+  white-space: nowrap;
+}
+
+.dashboard-modules-jump:hover {
+  color: var(--color-electric-blue-hover);
+}
+
+.dashboard-modules-jump:active {
+  color: var(--color-electric-blue-active);
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Tablet (768–1023px) — Row 1 unchanged (25/75 holds).
+ *   Row 2 splits vertically: NextStepCard above, Module Progress below.
+ * ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1023px) {
+  .dashboard-row2 {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  .dashboard-row2-next {
+    order: 1;
+  }
+  .dashboard-row2-modules {
+    order: 2;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Mobile (<768px) — single column stack:
+ *   Position → Execution Progress → Next Step → Module Progress
+ * ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .dashboard {
+    gap: var(--space-lg);
+  }
+
+  .dashboard-row1 {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  /* Row 1 source order is already Position → Execution Progress, no reorder needed */
+
+  /* Row 2 keeps its tablet stacking — Next Step above Module Progress */
+
+  .dashboard-modules-header {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .dashboard-modules-body {
+    padding: var(--space-md);
+  }
+}

@@ -1,0 +1,42 @@
+/* src/components/ProgressBar.css
+ *
+ * Brand System §Progress Display:
+ *   default height: 6px
+ *   compact height: 4px (used inside PhaseProgressList boxes)
+ * Track: Border color. Fill: Electric Blue → Success Green gradient.
+ * When complete: solid Success Green.
+ *
+ * Sharp corners only.
+ */
+
+.progress-bar {
+  position: relative;
+  width: 100%;
+  background: var(--color-border);
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.progress-bar--default {
+  height: 6px;
+}
+
+.progress-bar--compact {
+  height: 4px;
+}
+
+.progress-bar-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    var(--color-electric-blue) 0%,
+    var(--color-success-green) 100%
+  );
+  transform-origin: left;
+  border-radius: 0;
+}
+
+.progress-bar.is-complete .progress-bar-fill {
+  background: var(--color-success-green);
+}

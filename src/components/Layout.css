@@ -98,9 +98,14 @@
   justify-content: center;
   width: 44px;
   height: var(--nav-height-desktop);
-  font: var(--text-data);
   color: var(--color-text-secondary);
   transition: color var(--duration-base) linear;
+}
+
+.layout-nav-icon-svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
 }
 
 .layout-nav-tablet .layout-nav-icon:hover,
@@ -120,9 +125,13 @@
 }
 
 .layout-avatar-slot {
-  width: 36px;
-  height: 36px;
+  display: inline-flex;
+  align-items: center;
   margin-left: var(--space-lg);
+}
+
+.layout-avatar-slot--tablet {
+  display: none;
 }
 
 /* ─── Mobile top bar + bottom dock ─── */
@@ -143,13 +152,22 @@
 }
 
 .layout-mobile-avatar-slot {
-  width: 36px;
-  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .layout-mobile-brand {
-  font: var(--text-h3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   color: var(--color-electric-blue);
+}
+
+.layout-mobile-brand svg {
+  display: block;
 }
 
 .layout-bottom-dock {
@@ -174,7 +192,6 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  font: var(--text-data);
   color: var(--color-text-secondary);
   transition: color var(--duration-base) linear;
 }
@@ -182,6 +199,12 @@
 .layout-dock-link:hover,
 .layout-dock-link.is-active {
   color: var(--color-electric-blue);
+}
+
+.layout-dock-icon-svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
 }
 
 /* ─── Main content ─── */
@@ -196,13 +219,20 @@
 
 /* ─── Breakpoints ─── */
 
-/* Tablet (768–1023px): icon links visible, text links hidden */
+/* Tablet (768–1023px): icon links visible, text links hidden,
+   desktop avatar (with name) hidden, tablet avatar (icon only) shown */
 @media (max-width: 1023px) and (min-width: 768px) {
   .layout-nav-desktop {
     display: none;
   }
   .layout-nav-tablet {
     display: flex;
+  }
+  .layout-avatar-slot:not(.layout-avatar-slot--tablet) {
+    display: none;
+  }
+  .layout-avatar-slot--tablet {
+    display: inline-flex;
   }
   .layout-top-inner {
     padding: 0 var(--space-xl);

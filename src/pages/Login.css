@@ -1,0 +1,179 @@
+/* src/pages/Login.css
+ *
+ * Public entry — no Layout shell. Full viewport, centered card.
+ * Terminal dark background. No form fields. Single CTA.
+ *
+ * Animated logo: two SVG layers stacked.
+ *   Static layer  z-index: 1 — full ATLAS mark
+ *   Rotor layer   z-index: 2 — single line, rotates 4s linear infinite via SMIL
+ * Wrapper: position: relative; overflow: visible.
+ *
+ * prefers-reduced-motion: handled by index.css global block.
+ * Sharp corners only. Brand tokens only.
+ */
+
+.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  background: var(--color-bg-primary);
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xl);
+  width: 100%;
+  max-width: 440px;
+  padding: var(--space-3xl) var(--space-2xl);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+}
+
+/* ── Logo ── */
+
+.login-logo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.login-logo-icon {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  overflow: visible;
+}
+
+.login-logo-static {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+}
+
+/* Rotor SVG has viewBox -50,-50,462,462 (a 462×462 logical canvas) while the
+   static SVG occupies the inner 362×362. To keep the rotating line aligned
+   with the inner square, scale the rotor up to match the same logical units:
+   rotor width = wrapper width × (462 / 362) ≈ 127.6%, offset so the inner
+   362×362 region aligns to the wrapper bounds. */
+.login-logo-rotor {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(100% * (462 / 362));
+  height: calc(100% * (462 / 362));
+  transform: translate(-50%, -50%);
+  display: block;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.login-logo-wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 36px;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+
+/* ── Tagline ── */
+
+.login-tagline {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* ── Primary button ── */
+/* Brand System §Buttons — Primary: Electric Blue background, Black text,
+   16px 32px padding, 14px tracking-wider uppercase, hover slightly darker. */
+
+.login-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 32px;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-electric-blue);
+  color: #000000;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-base) linear,
+    transform var(--duration-base) linear;
+}
+
+.login-button:hover:not(:disabled) {
+  background: var(--color-electric-blue-hover);
+}
+
+.login-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.login-button:disabled {
+  background: var(--color-electric-blue-disabled);
+  color: rgba(0, 0, 0, 0.5);
+  cursor: not-allowed;
+}
+
+.login-button:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+.login-google-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+/* ── Footnote ── */
+
+.login-footnote {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: var(--space-2xl) var(--space-xl);
+    gap: var(--space-lg);
+  }
+  .login-logo-icon {
+    width: 80px;
+    height: 80px;
+  }
+  .login-logo-wordmark {
+    font-size: 28px;
+  }
+}
