@@ -1,0 +1,157 @@
+/* src/components/DeliverableUpload.css
+ *
+ * Five visual states for the Upload Zone.
+ * Brand System §Upload Zone — sharp corners, brand tokens only.
+ * Rejection state auto-reverts after 2500ms (handled in JSX).
+ */
+
+.upload-zone {
+  width: 100%;
+}
+
+/* Hidden native input — triggered via the surface button click. */
+.upload-zone__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The clickable surface — also the drag-drop target. Rendered as a <button>
+ * so keyboard activation (Enter/Space) is native and focusable. */
+.upload-zone__surface {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 144px;
+  padding: var(--space-2xl);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color var(--duration-base) linear,
+    background-color var(--duration-base) linear,
+    color var(--duration-base) linear;
+  font-family: var(--font-body);
+}
+
+.upload-zone__surface:hover:not(:disabled) {
+  border: 2px solid var(--color-electric-blue);
+  background: var(--color-electric-blue-05);
+  color: var(--color-electric-blue);
+  /* Compensate for the extra 1px of border so layout doesn't shift. */
+  padding: calc(var(--space-2xl) - 1px);
+}
+
+.upload-zone__surface:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+.upload-zone__surface:disabled {
+  cursor: not-allowed;
+}
+
+.upload-zone__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.upload-zone__label {
+  font: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+}
+
+.upload-zone__hint {
+  font: var(--text-caption);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ─── Drag-over state ───────────────────────────────────────── */
+.upload-zone--drag-over .upload-zone__surface {
+  border: 2px dashed var(--color-electric-blue);
+  background: var(--color-electric-blue-10);
+  color: var(--color-electric-blue);
+  padding: calc(var(--space-2xl) - 1px);
+}
+
+/* ─── Uploading state ──────────────────────────────────────── */
+.upload-zone--uploading .upload-zone__surface {
+  /* Keep base border so layout stays stable. */
+  cursor: progress;
+}
+
+.upload-zone__progress {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  height: 6px;
+  margin-top: var(--space-sm);
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.upload-zone__progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--color-electric-blue),
+    var(--color-success-green)
+  );
+}
+
+/* ─── Success state ────────────────────────────────────────── */
+.upload-zone--success .upload-zone__surface {
+  border: 2px solid var(--color-success-green);
+  background: var(--color-bg-secondary);
+  color: var(--color-success-green);
+  padding: calc(var(--space-2xl) - 1px);
+}
+
+/* ─── Rejection state ──────────────────────────────────────── */
+.upload-zone--rejection .upload-zone__surface {
+  border: 2px solid var(--color-error-red);
+  background: rgba(255, 51, 102, 0.05);
+  color: var(--color-error-red);
+  padding: calc(var(--space-2xl) - 1px);
+}
+
+.upload-zone--rejection .upload-zone__hint {
+  color: var(--color-text-secondary);
+  text-transform: none;
+  letter-spacing: var(--tracking-normal);
+  font: var(--text-caption);
+}
+
+/* ─── Mobile (≤768px) ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  .upload-zone__surface {
+    min-height: 120px;
+    padding: var(--space-xl);
+  }
+  .upload-zone__surface:hover:not(:disabled),
+  .upload-zone--drag-over .upload-zone__surface,
+  .upload-zone--success .upload-zone__surface,
+  .upload-zone--rejection .upload-zone__surface {
+    padding: calc(var(--space-xl) - 1px);
+  }
+}

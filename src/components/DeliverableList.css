@@ -1,0 +1,176 @@
+/* src/components/DeliverableList.css
+ *
+ * Per-file rows for uploaded deliverables. Brand System §Data Formatting.
+ * Sharp corners, brand tokens only.
+ */
+
+.deliverable-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.deliverable-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+}
+
+/* Stack adjacent rows without doubling the border line. */
+.deliverable-list__row + .deliverable-list__row {
+  border-top: 0;
+}
+
+.deliverable-list__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  flex: 1;
+}
+
+.deliverable-list__name {
+  font: var(--text-body);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deliverable-list__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font: var(--text-terminal);
+  color: var(--color-text-secondary);
+}
+
+.deliverable-list__size,
+.deliverable-list__date {
+  font-family: var(--font-mono);
+}
+
+.deliverable-list__dot {
+  color: var(--color-text-secondary);
+}
+
+.deliverable-list__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.deliverable-list__action {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--space-md);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  font: var(--text-button);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-base) linear,
+    color var(--duration-base) linear,
+    background-color var(--duration-base) linear;
+}
+
+.deliverable-list__action:hover {
+  border-color: var(--color-text-primary);
+}
+
+.deliverable-list__action:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+.deliverable-list__action:disabled {
+  color: var(--color-text-disabled);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.deliverable-list__action--download:hover {
+  border-color: var(--color-electric-blue);
+  color: var(--color-electric-blue);
+}
+
+.deliverable-list__action--delete:hover {
+  border-color: var(--color-error-red);
+  color: var(--color-error-red);
+}
+
+.deliverable-list__action--confirm {
+  background: var(--color-error-red);
+  border-color: var(--color-error-red);
+  color: var(--color-bg-primary);
+}
+
+.deliverable-list__action--confirm:hover:not(:disabled) {
+  background: var(--color-error-red-hover);
+  border-color: var(--color-error-red-hover);
+}
+
+.deliverable-list__confirm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.deliverable-list__confirm-text {
+  font: var(--text-caption);
+  color: var(--color-text-secondary);
+  margin-right: var(--space-sm);
+}
+
+.deliverable-list__error {
+  flex-basis: 100%;
+  margin-top: var(--space-sm);
+  font: var(--text-caption);
+  color: var(--color-error-red);
+}
+
+.deliverable-list__empty {
+  padding: var(--space-lg);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* ─── Mobile (≤768px) ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .deliverable-list__row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: var(--space-md);
+  }
+  .deliverable-list__main {
+    flex-basis: 100%;
+  }
+  .deliverable-list__actions,
+  .deliverable-list__confirm {
+    flex-basis: 100%;
+    margin-top: var(--space-sm);
+  }
+  .deliverable-list__action {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+    height: auto;
+  }
+}

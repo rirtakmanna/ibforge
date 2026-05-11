@@ -1,0 +1,197 @@
+/* src/components/CompanyGeneratorPanel.css
+ *
+ * 5-part prompt renderer. Each part is a labelled card with its own Copy
+ * button. Part 4 (Instructions) renders in a terminal-style scrollable box
+ * per Brand System §CompanyGeneratorPanel — JetBrains Mono, dark bg.
+ */
+
+.cg-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* ─── Error state ───────────────────────────────────────────────────── */
+.cg-panel--error {
+  padding: var(--space-lg);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-error-red);
+}
+
+.cg-panel__error-label {
+  font: var(--text-terminal);
+  color: var(--color-error-red);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  margin-bottom: var(--space-sm);
+}
+
+.cg-panel__error-message {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-text-primary);
+}
+
+/* ─── Master actions row ───────────────────────────────────────────── */
+.cg-panel__master-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cg-panel__copy-all {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-lg);
+  background: var(--color-electric-blue);
+  border: 1px solid var(--color-electric-blue);
+  border-radius: 0;
+  font: var(--text-button);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-bg-primary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-base) linear,
+    border-color var(--duration-base) linear;
+}
+
+.cg-panel__copy-all:hover {
+  background: var(--color-electric-blue-hover);
+  border-color: var(--color-electric-blue-hover);
+}
+
+.cg-panel__copy-all:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+/* ─── Generated header block ───────────────────────────────────────── */
+.cg-panel__header-block {
+  margin: 0;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  font: var(--text-terminal);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-wide);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ─── Per-part card ────────────────────────────────────────────────── */
+.cg-panel__part {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.cg-panel__part-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cg-panel__part-label {
+  font: var(--text-terminal);
+  color: var(--color-electric-blue);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+.cg-panel__part-label--emergency {
+  color: var(--color-warning-amber);
+}
+
+.cg-panel__part-title {
+  margin: 0;
+  font: var(--text-h3);
+  color: var(--color-text-primary);
+}
+
+.cg-panel__part-body {
+  margin: 0;
+  padding: var(--space-lg);
+  font: var(--text-body);
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.cg-panel__part-body--mono {
+  font: var(--text-code);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-normal);
+}
+
+.cg-panel__part-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-sm) var(--space-lg) var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.cg-panel__copy {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 var(--space-md);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  font: var(--text-button);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-base) linear,
+    color var(--duration-base) linear;
+}
+
+.cg-panel__copy:hover {
+  border-color: var(--color-electric-blue);
+  color: var(--color-electric-blue);
+}
+
+.cg-panel__copy:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+/* ─── Emergency variant ────────────────────────────────────────────── */
+.cg-panel__part--emergency {
+  border-color: var(--color-warning-amber);
+}
+
+.cg-panel__part--emergency .cg-panel__part-header {
+  border-bottom-color: var(--color-warning-amber);
+}
+
+/* ─── Mobile (≤768px) ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .cg-panel__header-block,
+  .cg-panel__part-header,
+  .cg-panel__part-body,
+  .cg-panel__part-actions {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+  .cg-panel__part-body {
+    max-height: 360px;
+  }
+  .cg-panel__copy-all,
+  .cg-panel__copy {
+    flex: 1;
+    justify-content: center;
+  }
+  .cg-panel__master-actions {
+    justify-content: stretch;
+  }
+}
