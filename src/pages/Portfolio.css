@@ -1,0 +1,413 @@
+/* src/pages/Portfolio.css
+ *
+ * Portfolio page styles — brand tokens only, sharp corners, terminal aesthetic.
+ * Layout: page title + filter chips, then sectioned table per step.
+ */
+
+/* ─── Page shell ───────────────────────────────────────────────────────── */
+.portfolio {
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-xl);
+  color: var(--color-text-primary);
+}
+
+.portfolio__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+}
+
+.portfolio__title {
+  font: var(--text-h2);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+/* ─── Filter chips ─────────────────────────────────────────────────────── */
+.portfolio__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.portfolio__chip {
+  font: var(--text-label);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: var(--space-sm) var(--space-md);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out);
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.portfolio__chip:hover {
+  border-color: var(--color-electric-blue);
+  color: var(--color-text-primary);
+}
+
+.portfolio__chip:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+.portfolio__chip--active {
+  border-color: var(--color-electric-blue);
+  color: var(--color-electric-blue);
+  background: var(--color-electric-blue-10);
+}
+
+/* ─── Sections ─────────────────────────────────────────────────────────── */
+.portfolio__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.portfolio__section {
+  display: flex;
+  flex-direction: column;
+}
+
+.portfolio__section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-md) 0;
+  padding: var(--space-md) 0 var(--space-sm) 0;
+  font: var(--text-micro);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+.portfolio__section-dash {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+  display: block;
+}
+
+.portfolio__section-label {
+  flex: 0 0 auto;
+  padding: 0 var(--space-sm);
+}
+
+/* ─── Table ────────────────────────────────────────────────────────────── */
+.portfolio__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+}
+
+.portfolio__table {
+  width: 100%;
+  min-width: 720px; /* keeps columns readable; wrap scrolls horizontally */
+  border-collapse: collapse;
+}
+
+.portfolio__thead-row {
+  background: var(--color-bg-secondary);
+}
+
+.portfolio__th {
+  font: var(--text-terminal);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-widest);
+  text-align: left;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.portfolio__th--actions {
+  text-align: right;
+}
+
+.portfolio__row {
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color var(--duration-base) var(--ease-out);
+}
+
+.portfolio__row:hover {
+  background: var(--color-bg-primary);
+}
+
+.portfolio__row:last-child {
+  border-bottom: none;
+}
+
+.portfolio__td {
+  padding: var(--space-md) var(--space-lg);
+  font: var(--text-body);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.portfolio__td--code {
+  font: var(--text-data);
+  color: var(--color-electric-blue);
+  letter-spacing: var(--tracking-tighter);
+  white-space: nowrap;
+}
+
+.portfolio__td--name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+}
+
+.portfolio__file-link {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  transition: color var(--duration-base) var(--ease-out);
+  word-break: break-word;
+}
+
+.portfolio__file-link:hover,
+.portfolio__file-link:focus-visible {
+  color: var(--color-electric-blue);
+}
+
+.portfolio__file-link:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+.portfolio__size {
+  font: var(--text-caption);
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+}
+
+.portfolio__td--type {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-wide);
+  white-space: nowrap;
+}
+
+.portfolio__td--date {
+  font: var(--text-caption);
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.portfolio__td--actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.portfolio__action {
+  font: var(--text-button);
+  font-size: 12px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 6px 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    border-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out);
+  display: inline-block;
+}
+
+.portfolio__action + .portfolio__action {
+  margin-left: var(--space-sm);
+}
+
+.portfolio__action--download {
+  color: var(--color-text-secondary);
+}
+
+.portfolio__action--download:hover,
+.portfolio__action--download:focus-visible {
+  border-color: var(--color-electric-blue);
+  color: var(--color-electric-blue);
+}
+
+.portfolio__action--delete {
+  color: var(--color-text-secondary);
+}
+
+.portfolio__action--delete:hover,
+.portfolio__action--delete:focus-visible {
+  border-color: var(--color-error-red);
+  color: var(--color-error-red);
+}
+
+.portfolio__action:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+/* ─── Empty state ──────────────────────────────────────────────────────── */
+.portfolio__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-4xl) var(--space-xl);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  margin-top: var(--space-xl);
+}
+
+.portfolio__empty-title {
+  font: var(--text-terminal);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-text-secondary);
+  margin: 0;
+  text-align: center;
+}
+
+.portfolio__empty-sub {
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  margin: 0;
+  text-align: center;
+}
+
+/* ─── Delete confirmation modal ────────────────────────────────────────── */
+.portfolio__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 15, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+  z-index: var(--z-modal);
+}
+
+.portfolio__modal {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: var(--space-xl);
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.portfolio__modal-title {
+  font: var(--text-terminal);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-error-red);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.portfolio__modal-body {
+  font: var(--text-body);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.portfolio__modal-filename {
+  font-family: var(--font-mono);
+  color: var(--color-electric-blue);
+  word-break: break-all;
+}
+
+.portfolio__modal-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+  margin-top: var(--space-sm);
+}
+
+.portfolio__modal-btn {
+  font: var(--text-button);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  background: transparent;
+  border: 2px solid var(--color-border);
+  border-radius: 0;
+  padding: var(--space-sm) var(--space-lg);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out);
+}
+
+.portfolio__modal-btn--cancel {
+  color: var(--color-text-secondary);
+}
+
+.portfolio__modal-btn--cancel:hover {
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+}
+
+.portfolio__modal-btn--delete {
+  color: var(--color-error-red);
+  border-color: var(--color-error-red);
+}
+
+.portfolio__modal-btn--delete:hover {
+  background: var(--color-error-red);
+  color: var(--color-bg-primary);
+}
+
+.portfolio__modal-btn:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+/* ─── Mobile (<768px) ──────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .portfolio {
+    padding: var(--space-xl) var(--space-md);
+  }
+
+  .portfolio__title {
+    font: var(--text-h3);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+  }
+
+  .portfolio__th,
+  .portfolio__td {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .portfolio__modal {
+    padding: var(--space-lg);
+  }
+}

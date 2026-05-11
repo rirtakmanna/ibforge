@@ -1,0 +1,225 @@
+/* src/components/LinkedInCard.css
+ *
+ * LinkedInCard — terminal-aesthetic card with type-colored left accent.
+ * BEM-style naming: .lic, .lic__header, .lic--compact, etc.
+ */
+
+/* ─── Base ─────────────────────────────────────────────────────────────── */
+.lic {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  border-radius: 0;
+  padding: var(--space-md) var(--space-lg);
+  color: var(--color-text-primary);
+  transition:
+    border-color var(--duration-base) var(--ease-out),
+    background-color var(--duration-base) var(--ease-out);
+}
+
+.lic:hover {
+  background: var(--color-bg-tertiary);
+}
+
+/* ─── Type accents ─────────────────────────────────────────────────────── */
+.lic--thread {
+  border-left-color: var(--color-electric-blue);
+}
+
+.lic--model-drop {
+  border-left-color: var(--color-warning-amber);
+}
+
+.lic--pitch {
+  border-left-color: var(--color-success-green);
+}
+
+.lic--post {
+  border-left-color: var(--color-text-secondary);
+}
+
+/* ─── Header (badge + day) ─────────────────────────────────────────────── */
+.lic__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.lic__badge {
+  font: var(--text-terminal);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-widest);
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.lic__badge--thread {
+  color: var(--color-electric-blue);
+  background: var(--color-electric-blue-10);
+}
+
+.lic__badge--model-drop {
+  color: var(--color-warning-amber);
+  background: transparent;
+}
+
+.lic__badge--pitch {
+  color: var(--color-success-green);
+  background: transparent;
+}
+
+.lic__badge--post {
+  color: var(--color-text-secondary);
+  background: transparent;
+}
+
+.lic__day {
+  font: var(--text-terminal);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ─── Title ────────────────────────────────────────────────────────────── */
+.lic__title {
+  font: var(--text-h3);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+  margin: 0;
+  /* Two-line clamp to keep compact cards uniform on the Calendar panel. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.lic--full .lic__title {
+  font-size: 20px;
+  -webkit-line-clamp: unset;
+  display: block;
+}
+
+/* ─── Full variant — meta line + body ──────────────────────────────────── */
+.lic__meta {
+  font: var(--text-caption);
+  color: var(--color-text-secondary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.lic__meta-company {
+  color: var(--color-text-primary);
+}
+
+.lic__meta-divider {
+  color: var(--color-text-secondary);
+}
+
+.lic__meta-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.lic__body {
+  font: var(--text-body);
+  color: var(--color-text-primary);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+  max-height: 320px;
+  overflow-y: auto;
+  /* whiteSpace: pre-wrap is set inline on the element for safety with content */
+}
+
+/* ─── Footer (copy button) ─────────────────────────────────────────────── */
+.lic__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-xs);
+}
+
+.lic__copy {
+  position: relative;
+  font: var(--text-button);
+  font-size: 12px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 6px 14px;
+  cursor: pointer;
+  min-width: 96px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition:
+    border-color var(--duration-base) var(--ease-out),
+    color var(--duration-base) var(--ease-out);
+}
+
+.lic__copy:hover:not(:disabled) {
+  border-color: var(--color-electric-blue);
+  color: var(--color-electric-blue);
+}
+
+.lic__copy:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+.lic__copy:disabled {
+  cursor: default;
+  /* When disabled because of the copied state, recolor to success — not muted. */
+  border-color: var(--color-success-green);
+  color: var(--color-success-green);
+}
+
+.lic__copy-label {
+  display: inline-block;
+}
+
+.lic__copy-label--copied {
+  color: var(--color-success-green);
+}
+
+/* ─── Compact variant compactness tuning ───────────────────────────────── */
+.lic--compact {
+  padding: var(--space-md);
+  gap: var(--space-xs);
+}
+
+.lic--compact .lic__title {
+  font-size: 14px;
+}
+
+/* ─── Mobile (<768px) ──────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .lic {
+    padding: var(--space-md);
+  }
+
+  .lic--full .lic__title {
+    font-size: 16px;
+  }
+}
