@@ -130,7 +130,7 @@
 /* ─── Rejection state ──────────────────────────────────────── */
 .upload-zone--rejection .upload-zone__surface {
   border: 2px solid var(--color-error-red);
-  background: rgba(255, 51, 102, 0.05);
+  background: var(--color-error-red-05);
   color: var(--color-error-red);
   padding: calc(var(--space-2xl) - 1px);
 }

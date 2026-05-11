@@ -46,6 +46,7 @@
   --color-warning-amber-hover: #e6a500;
   --color-error-red: #ff3366;
   --color-error-red-hover: #e62958;
+  --color-error-red-05: rgba(255, 51, 102, 0.05);
 
   /* ─── Typography — Font Families ─── */
   --font-display: "Space Grotesk", sans-serif;

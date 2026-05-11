@@ -51,11 +51,10 @@
 }
 
 .lic__badge {
-  font: var(--text-terminal);
+  font: var(--text-micro);
   font-family: var(--font-mono);
-  font-size: 10px;
   letter-spacing: var(--tracking-widest);
-  padding: 4px 8px;
+  padding: var(--space-xs) var(--space-sm);
   border: 1px solid currentColor;
   text-transform: uppercase;
   white-space: nowrap;
@@ -82,9 +81,8 @@
 }
 
 .lic__day {
-  font: var(--text-terminal);
+  font: var(--text-micro);
   font-family: var(--font-mono);
-  font-size: 10px;
   letter-spacing: var(--tracking-widest);
   color: var(--color-text-secondary);
   text-transform: uppercase;
@@ -93,23 +91,24 @@
 
 /* ─── Title ────────────────────────────────────────────────────────────── */
 .lic__title {
-  font: var(--text-h3);
-  font-size: 16px;
+  font: var(--text-body-lg);
   font-weight: 600;
-  line-height: 1.3;
   color: var(--color-text-primary);
   margin: 0;
   /* Two-line clamp to keep compact cards uniform on the Calendar panel. */
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   word-break: break-word;
 }
 
 .lic--full .lic__title {
-  font-size: 20px;
+  font: var(--text-h3);
+  font-weight: 600;
   -webkit-line-clamp: unset;
+  line-clamp: unset;
   display: block;
 }
 
@@ -133,8 +132,7 @@
 }
 
 .lic__meta-date {
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font: var(--text-terminal);
 }
 
 .lic__body {
@@ -157,15 +155,15 @@
 
 .lic__copy {
   position: relative;
-  font: var(--text-button);
-  font-size: 12px;
+  font: var(--text-caption);
+  font-weight: 500;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   background: transparent;
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
   border-radius: 0;
-  padding: 6px 14px;
+  padding: var(--space-xs) var(--space-md);
   cursor: pointer;
   min-width: 96px;
   min-height: 32px;
@@ -210,16 +208,18 @@
 }
 
 .lic--compact .lic__title {
-  font-size: 14px;
+  font: var(--text-body);
+  font-weight: 600;
 }
 
 /* ─── Mobile (<768px) ──────────────────────────────────────────────────── */
-@media (max-width: 767px) {
+ @media (max-width: 767px) {
   .lic {
     padding: var(--space-md);
   }
 
   .lic--full .lic__title {
-    font-size: 16px;
+    font: var(--text-body-lg);
+    font-weight: 600;
   }
 }
