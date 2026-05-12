@@ -11,9 +11,9 @@
 // prefers-reduced-motion: handled by index.css global block (Phase 1) which stops
 // SMIL animation via animation-play-state. No local override needed.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithGoogle } from "@/utils/auth";
+import { signInWithGoogle, onAuthChange } from "@/utils/auth";
 import "./Login.css";
 
 function GoogleIcon() {
@@ -119,21 +119,78 @@ function AtlasLogoAnimated() {
   );
 }
 
+function errorMessageFor(err) {
+  // Map Firebase Auth error codes to user-facing strings.
+  // Cancellations are NOT errors — they're soft, muted messages.
+  const code = err?.code || "";
+  switch (code) {
+    case "auth/popup-closed-by-user":
+    case "auth/cancelled-popup-request":
+      return { text: "Sign-in cancelled.", severity: "info" };
+    case "auth/popup-blocked":
+      return {
+        text: "Popup blocked. Trying redirect — please wait.",
+        severity: "info",
+      };
+    case "auth/network-request-failed":
+      return {
+        text: "Network error. Check your connection and try again.",
+        severity: "error",
+      };
+    case "auth/invalid-credential":
+    case "auth/internal-error":
+      return { text: "Sign-in failed. Try again.", severity: "error" };
+    default:
+      // Surface unknown codes during development; users see a generic message.
+      // eslint-disable-next-line no-console
+      if (code) console.warn("Login: unhandled auth error code", code);
+      return { text: "Sign-in failed. Try again.", severity: "error" };
+  }
+}
+
 function Login() {
   const navigate = useNavigate();
+  // authState: "unknown" until first onAuthChange callback. If a user is
+  // already signed in, redirect to / immediately rather than letting them
+  // see (and click) the sign-in button uselessly.
+  const [authState, setAuthState] = useState("unknown");
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [errorState, setErrorState] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthChange((user) => {
+      if (user) {
+        navigate("/", { replace: true });
+      } else {
+        setAuthState("unauthenticated");
+      }
+    });
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, [navigate]);
 
   async function handleSignIn() {
     if (isSigningIn) return;
+    setErrorState(null);
     setIsSigningIn(true);
     try {
       await signInWithGoogle();
-      navigate("/", { replace: true });
-    } catch {
-      // Phase 3 wires real error handling. Phase 1/2A: placeholder cannot fail.
+      // Successful sign-in fires onAuthChange above, which navigates to /.
+      // We don't navigate here to avoid a double-navigate race.
+    } catch (err) {
+      setErrorState(errorMessageFor(err));
       setIsSigningIn(false);
     }
   }
+
+  const isCheckingSession = authState === "unknown";
+  const buttonLabel = isCheckingSession
+    ? "CHECKING SESSION…"
+    : isSigningIn
+    ? "SIGNING IN…"
+    : "SIGN IN WITH GOOGLE";
+  const buttonDisabled = isCheckingSession || isSigningIn;
 
   return (
     <main className="login" role="main">
@@ -146,15 +203,31 @@ function Login() {
           type="button"
           className="login-button"
           onClick={handleSignIn}
-          disabled={isSigningIn}
-          aria-busy={isSigningIn}
+          disabled={buttonDisabled}
+          aria-busy={isSigningIn || isCheckingSession}
         >
           <GoogleIcon />
-          <span>{isSigningIn ? "SIGNING IN…" : "SIGN IN WITH GOOGLE"}</span>
+          <span>{buttonLabel}</span>
         </button>
-        <p className="login-footnote">
-          Sign-in is not yet wired. Phase 3 enables Google authentication.
-        </p>
+        {errorState && (
+          <p
+            role={errorState.severity === "error" ? "alert" : "status"}
+            aria-live="polite"
+            style={{
+              marginTop: "1rem",
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.75rem",
+              letterSpacing: "0.05em",
+              color:
+                errorState.severity === "error"
+                  ? "var(--color-error-red)"
+                  : "var(--color-text-secondary)",
+              textAlign: "center",
+            }}
+          >
+            {errorState.text}
+          </p>
+        )}
       </div>
     </main>
   );
