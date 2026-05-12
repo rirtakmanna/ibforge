@@ -172,11 +172,11 @@ select {
 }
 
 ::selection {
-  background: rgba(15, 163, 224, 0.35);
+  background: var(--color-electric-blue-35);
   color: var(--color-text-primary);
 }
 
 ::-moz-selection {
-  background: rgba(15, 163, 224, 0.35);
+  background: var(--color-electric-blue-35);
   color: var(--color-text-primary);
 }

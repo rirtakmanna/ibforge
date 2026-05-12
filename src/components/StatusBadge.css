@@ -63,7 +63,7 @@
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  stroke-width: 2.5;
+  strokewidth: 2.5;
 }
 
 .status-badge--full-width .status-badge-icon {

@@ -328,7 +328,7 @@
 .step-detail__feedback--error {
   border-color: var(--color-error-red);
   color: var(--color-error-red);
-  background: rgba(255, 51, 102, 0.05);
+  background: var(--color-error-red-05);
 }
 
 /* ─── Mobile (≤768px) ──────────────────────────────────────────────── */

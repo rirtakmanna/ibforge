@@ -296,7 +296,7 @@ function PartCard({ partLabel, title, body, isMono = false }) {
           type="button"
           className="cg-panel__copy"
           onClick={handleCopy}
-          aria-label={`Copy ${title}`}
+          aria-label={copied ? `${title} copied to clipboard` : `Copy ${title}`}
           animate={{ scale: copied ? 1.02 : 1 }}
           transition={{ duration: 0.15 }}
         >
@@ -399,7 +399,7 @@ function ChatCard({ number, text }) {
         type="button"
         className="cg-panel__copy cg-panel__copy--chat"
         onClick={handleCopy}
-        aria-label={`Copy chat ${number} text`}
+        aria-label={copied ? `Chat ${number} text copied to clipboard` : `Copy chat ${number} text`}
         animate={{ scale: copied ? 1.02 : 1 }}
         transition={{ duration: 0.15 }}
       >
@@ -457,35 +457,47 @@ function CompanyGeneratorPanel({ step, company }) {
         chats={parts.allChats}
       />
 
-      <section className="cg-panel__part cg-panel__part--emergency">
-        <header className="cg-panel__part-header">
-          <div className="cg-panel__part-label cg-panel__part-label--emergency">
-            EMERGENCY MODE
-          </div>
-          <h3 className="cg-panel__part-title">Paste when stuck</h3>
-        </header>
-        <pre className="cg-panel__part-body">{parts.emergency}</pre>
-        <div className="cg-panel__part-actions">
-          <button
-            type="button"
-            className="cg-panel__copy"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(parts.emergency);
-              } catch (err) {
-                console.error(
-                  "[CompanyGeneratorPanel] emergency copy failed:",
-                  err,
-                );
-              }
-            }}
-            aria-label="Copy emergency mode block"
-          >
-            COPY →
-          </button>
-        </div>
-      </section>
+      <EmergencyPart body={parts.emergency} />
     </div>
+  );
+}
+
+// ─── Emergency Mode card — own copied state for visual + a11y feedback ──────
+function EmergencyPart({ body }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(body);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      console.error("[CompanyGeneratorPanel] emergency copy failed:", err);
+    }
+  };
+
+  return (
+    <section className="cg-panel__part cg-panel__part--emergency">
+      <header className="cg-panel__part-header">
+        <div className="cg-panel__part-label cg-panel__part-label--emergency">
+          EMERGENCY MODE
+        </div>
+        <h3 className="cg-panel__part-title">Paste when stuck</h3>
+      </header>
+      <pre className="cg-panel__part-body">{body}</pre>
+      <div className="cg-panel__part-actions">
+        <motion.button
+          type="button"
+          className="cg-panel__copy"
+          onClick={handleCopy}
+          aria-label={copied ? "Emergency mode block copied to clipboard" : "Copy emergency mode block"}
+          animate={{ scale: copied ? 1.02 : 1 }}
+          transition={{ duration: 0.15 }}
+        >
+          {copied ? "COPIED ✓" : "COPY →"}
+        </motion.button>
+      </div>
+    </section>
   );
 }
 

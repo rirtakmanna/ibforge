@@ -22,7 +22,7 @@
   top: 0;
   z-index: var(--z-nav);
   height: var(--nav-height-desktop);
-  background: rgba(10, 10, 15, 0.9);
+  background: var(--color-bg-primary-90);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--color-border);
@@ -150,7 +150,7 @@
 .layout-nav-icon-svg {
   width: 20px;
   height: 20px;
-  stroke-width: 2;
+  strokewidth: 2;
 }
 
 .layout-nav-tablet .layout-nav-icon:hover,
@@ -188,7 +188,7 @@
   z-index: var(--z-nav);
   height: var(--nav-height-mobile-top);
   padding: 0 var(--space-md);
-  background: rgba(10, 10, 15, 0.9);
+  background: var(--color-bg-primary-90);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--color-border);
@@ -258,7 +258,7 @@
 .layout-dock-icon-svg {
   width: 24px;
   height: 24px;
-  stroke-width: 2;
+  strokewidth: 2;
 }
 
 /* ─── Main content ─── */

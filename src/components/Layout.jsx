@@ -110,7 +110,11 @@ function Layout() {
                   `layout-nav-link${isActive ? " is-active" : ""}`
                 }
               >
-                {item.label}
+                {({ isActive }) => (
+                  <span aria-current={isActive ? "page" : undefined}>
+                    {item.label}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>

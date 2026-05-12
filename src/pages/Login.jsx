@@ -82,8 +82,8 @@ function AtlasLogoAnimated() {
             d="M256 228.502C256.552 228.502 257 228.95 257 229.502V246.705C257 247.257 256.552 247.705 256 247.705H155.911C155.359 247.705 154.911 247.257 154.911 246.705V229.502C154.911 228.95 155.359 228.502 155.911 228.502H256Z"
             fill="var(--color-electric-blue)"
             stroke="var(--color-electric-blue)"
-            stroke-width="2.5"
-            stroke-linejoin="round"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
           />
         </svg>
         <svg

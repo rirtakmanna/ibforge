@@ -25,7 +25,7 @@
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 24px;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-wide);
   color: var(--color-text-primary);
   margin: 0;
 }
@@ -33,7 +33,7 @@
 .roadmap__counter {
   display: inline-flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--space-sm);
   font-family: var(--font-mono);
   color: var(--color-text-secondary);
 }
@@ -47,7 +47,7 @@
 
 .roadmap__counter-label {
   font-size: 11px;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-wider);
   text-transform: lowercase;
 }
 
@@ -55,7 +55,7 @@
 .roadmap__list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 /* ─── Empty state ───────────────────────────────────────────────── */
@@ -70,9 +70,9 @@
   font-family: var(--font-mono);
   font-weight: 400;
   font-size: 14px;
-  letter-spacing: 0.15em;
+  letter-spacing: var(--tracking-widest);
   color: var(--color-text-secondary);
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--space-sm) 0;
 }
 
 .roadmap__empty-sub {
@@ -105,7 +105,7 @@
   .roadmap__header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: var(--space-sm);
     margin-bottom: var(--space-lg, 24px);
   }
 

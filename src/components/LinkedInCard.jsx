@@ -106,11 +106,7 @@ export default function LinkedInCard({
             </p>
           )}
 
-          <div
-            className="lic__body"
-            // Preserve emoji and line breaks from roadmapData content.
-            style={{ whiteSpace: "pre-wrap" }}
-          >
+          <div className="lic__body">
             {post.content}
           </div>
         </>
@@ -122,7 +118,7 @@ export default function LinkedInCard({
           className="lic__copy"
           onClick={handleCopy}
           disabled={copied}
-          aria-live="polite"
+          aria-label={copied ? `${type.label} post copied` : `Copy ${type.label} post: ${title}`}
         >
           <AnimatePresence mode="wait" initial={false}>
             {copied ? (

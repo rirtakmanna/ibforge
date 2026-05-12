@@ -19,7 +19,7 @@
   --color-bg-primary: #0a0a0f;
   --color-bg-secondary: #121218;
   --color-bg-tertiary: #1a1a24;
-  --color-black: #000000;
+  
 
   /* ─── Border ─── */
   --color-border: #1f1f2e;
@@ -34,6 +34,7 @@
   --color-electric-blue-hover: #0d8ec0;
   --color-electric-blue-active: #0b79a6;
   --color-electric-blue-disabled: #063a50;
+  --color-electric-blue-35: rgba(15, 163, 224, 0.35);
   --color-electric-blue-10: rgba(15, 163, 224, 0.1);
   --color-electric-blue-05: rgba(15, 163, 224, 0.05);
   --color-electric-blue-03: rgba(15, 163, 224, 0.03);
@@ -47,6 +48,17 @@
   --color-error-red: #ff3366;
   --color-error-red-hover: #e62958;
   --color-error-red-05: rgba(255, 51, 102, 0.05);
+
+  /* ─── Black overlay (button text on electric-blue surfaces) ─── */
+  --color-black-50: rgba(0, 0, 0, 0.5);
+  --color-black: #000000;
+
+  /* ─── Modal backdrop (bg-primary at 75% opacity) ─── */
+  --color-backdrop: rgba(10, 10, 15, 0.75);
+
+  /* ─── Translucent bg-primary (sticky nav backgrounds with backdrop-filter blur) ─── */
+  --color-bg-primary-90: rgba(10, 10, 15, 0.9);
+  
 
   /* ─── Typography — Font Families ─── */
   --font-display: "Space Grotesk", sans-serif;

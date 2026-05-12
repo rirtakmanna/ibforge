@@ -85,7 +85,7 @@
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  stroke-width: 2;
+  strokewidth: 2;
 }
 
 .next-step-card-subtitle {
@@ -129,7 +129,8 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background-color var(--duration-base) linear,
+  transition:
+    background-color var(--duration-base) linear,
     transform var(--duration-base) linear;
 }
 
@@ -149,7 +150,7 @@
 .next-step-card-button-icon {
   width: 16px;
   height: 16px;
-  stroke-width: 2.5;
+  strokewidth: 2.5;
   flex-shrink: 0;
 }
 

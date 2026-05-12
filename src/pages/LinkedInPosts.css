@@ -3,9 +3,9 @@
  * Sub-page of /step/:id/linkedin. Layout mirrors GenerateProject:
  *   back link → header → divider → list of post cards → empty state.
  *
- * All colors, fonts, spacing via CSS variables from variables.css.
- * No hex codes. No inline brand values. No CSS @keyframes
- * (Framer Motion handles animation on the card + buttons).
+ * Brand: variables.css — CSS variables only, no hex codes, no raw rgba,
+ * no inline styles, no CSS @keyframes (Framer Motion handles all motion
+ * — card entrance, button "copied" feedback). Sharp corners only.
  */
 
 /* ─── Page shell ──────────────────────────────────────────────────────── */
@@ -19,24 +19,29 @@
 
 .lip__back {
   display: inline-block;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.08em;
-  color: var(--color-text-muted);
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
   text-decoration: none;
   margin-bottom: var(--space-lg);
-  transition: color 0.15s ease;
+  transition: color var(--duration-base) linear;
 }
 
-.lip__back:hover,
+.lip__back:hover {
+  color: var(--color-electric-blue);
+}
+
 .lip__back:focus-visible {
-  color: var(--color-accent-primary);
-  outline: none;
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+  color: var(--color-electric-blue);
 }
 
 .lip__missing {
+  font: var(--text-body);
   font-family: var(--font-mono);
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   padding: var(--space-lg) 0;
 }
 
@@ -47,32 +52,30 @@
 }
 
 .lip__position {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.12em;
-  color: var(--color-text-muted);
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-text-secondary);
   margin-bottom: var(--space-sm);
 }
 
 .lip__title {
-  font-family: var(--font-display);
-  font-size: var(--font-size-2xl);
-  font-weight: 600;
-  line-height: 1.15;
+  font: var(--text-h2);
+  letter-spacing: var(--tracking-tight);
   color: var(--color-text-primary);
   margin: 0 0 var(--space-sm) 0;
 }
 
 .lip__subtitle {
+  font: var(--text-caption);
   font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
 .lip__divider {
   border: 0;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 1px solid var(--color-border);
   margin: var(--space-lg) 0 var(--space-xl) 0;
 }
 
@@ -80,15 +83,15 @@
 
 .lip__empty {
   padding: var(--space-xl);
-  border: 1px dashed var(--color-border-subtle);
-  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  border: 1px dashed var(--color-border);
+  border-radius: 0;
   text-align: center;
 }
 
 .lip__empty-text {
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
-  color: var(--color-text-muted);
+  font: var(--text-body);
+  color: var(--color-text-secondary);
   margin: 0;
 }
 
@@ -103,9 +106,9 @@
 /* ─── Card ────────────────────────────────────────────────────────────── */
 
 .lip__card {
-  background-color: var(--color-bg-elevated);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-md);
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   padding: var(--space-lg);
   display: flex;
   flex-direction: column;
@@ -126,59 +129,52 @@
 }
 
 .lip__post-num {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.1em;
-  color: var(--color-text-muted);
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-text-secondary);
 }
 
 .lip__type-badge {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.08em;
-  color: var(--color-accent-primary);
-  border: 1px solid var(--color-accent-primary);
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-electric-blue);
+  border: 1px solid var(--color-electric-blue);
+  border-radius: 0;
   padding: 2px var(--space-sm);
-  border-radius: var(--radius-sm);
   text-transform: uppercase;
 }
 
-/* Status chip — colour by variant. Background uses a tinted token if
- * present; falls back to transparent with coloured border + text. */
+/* Status chip — colour by variant. Transparent background, coloured
+ * border + text via currentColor. */
 .lip__chip {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.08em;
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   padding: 2px var(--space-sm);
-  border-radius: var(--radius-sm);
   border: 1px solid currentColor;
+  border-radius: 0;
   background-color: transparent;
 }
 
 .lip__chip--scheduled {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .lip__chip--posted {
-  color: var(--color-success);
+  color: var(--color-success-green);
 }
 
 .lip__chip--overdue {
-  color: var(--color-warning);
+  color: var(--color-warning-amber);
 }
 
 .lip__schedule-line {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
+  font: var(--text-data);
   color: var(--color-text-secondary);
 }
 
 .lip__card-title {
-  font-family: var(--font-display);
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  line-height: 1.25;
+  font: var(--text-h3);
   color: var(--color-text-primary);
   margin: 0;
 }
@@ -186,10 +182,9 @@
 /* ─── Body + files sections ───────────────────────────────────────────── */
 
 .lip__section-label {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-xs);
-  letter-spacing: 0.12em;
-  color: var(--color-text-muted);
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   margin-bottom: var(--space-sm);
 }
@@ -200,17 +195,16 @@
   flex-direction: column;
 }
 
+/* Override <pre> UA defaults: switch to Inter body font, drop default margin,
+ * preserve line breaks + emoji per §LinkedIn Posts Page Spec. */
 .lip__body {
-  font-family: var(--font-body);
-  font-size: var(--font-size-base);
-  line-height: 1.6;
+  font: var(--text-body-lg);
   color: var(--color-text-primary);
   background-color: var(--color-bg-primary);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   padding: var(--space-md);
   margin: 0;
-  /* Preserve line breaks + emoji; allow wrap on narrow screens. */
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-wrap: break-word;
@@ -228,8 +222,7 @@
 }
 
 .lip__files-item {
-  font-family: var(--font-body);
-  font-size: var(--font-size-sm);
+  font: var(--text-body);
   color: var(--color-text-secondary);
   padding-left: var(--space-md);
   position: relative;
@@ -239,13 +232,12 @@
   content: "·";
   position: absolute;
   left: 0;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .lip__files-empty {
-  font-family: var(--font-body);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  font: var(--text-body);
+  color: var(--color-text-secondary);
   font-style: italic;
   margin: 0;
 }
@@ -260,20 +252,19 @@
 }
 
 .lip__action {
+  font: var(--text-button);
   font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   padding: var(--space-sm) var(--space-lg);
-  border-radius: var(--radius-sm);
   border: 1px solid transparent;
+  border-radius: 0;
   cursor: pointer;
   text-decoration: none;
   text-transform: uppercase;
   transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+    background-color var(--duration-base) linear,
+    border-color var(--duration-base) linear,
+    color var(--duration-base) linear;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -281,46 +272,59 @@
 }
 
 .lip__action:focus-visible {
-  outline: 2px solid var(--color-accent-primary);
+  outline: 2px solid var(--color-electric-blue);
   outline-offset: 2px;
 }
 
 .lip__action--primary {
-  background-color: var(--color-accent-primary);
-  color: var(--color-bg-primary);
-  border-color: var(--color-accent-primary);
+  background-color: var(--color-electric-blue);
+  color: var(--color-black);
+  border-color: var(--color-electric-blue);
 }
 
 .lip__action--primary:hover:not(:disabled) {
-  background-color: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
+  background-color: var(--color-electric-blue-hover);
+  border-color: var(--color-electric-blue-hover);
+}
+
+.lip__action--primary:disabled {
+  background-color: var(--color-electric-blue-disabled);
+  border-color: var(--color-electric-blue-disabled);
+  color: var(--color-black-50);
+  cursor: not-allowed;
 }
 
 .lip__action--secondary {
   background-color: transparent;
   color: var(--color-text-primary);
-  border-color: var(--color-border-subtle);
+  border-color: var(--color-border);
 }
 
 .lip__action--secondary:hover:not(:disabled) {
-  border-color: var(--color-accent-primary);
-  color: var(--color-accent-primary);
+  border-color: var(--color-electric-blue);
+  color: var(--color-electric-blue);
 }
 
-.lip__action:disabled {
-  opacity: 0.6;
+.lip__action--secondary:disabled {
+  color: var(--color-text-disabled);
+  border-color: var(--color-border);
   cursor: not-allowed;
 }
 
-/* ─── Responsive — mobile (≤768px) ────────────────────────────────────── */
+/* ─── Responsive — Mobile (≤767px) ────────────────────────────────────── */
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .lip {
-    padding: var(--space-lg) var(--space-md) var(--space-2xl);
+    /* Bottom padding clears the sticky bottom dock + safe-area inset. */
+    padding: var(--space-lg) var(--space-md)
+      calc(
+        var(--nav-height-mobile-bottom) + var(--space-2xl) +
+          env(safe-area-inset-bottom)
+      );
   }
 
   .lip__title {
-    font-size: var(--font-size-xl);
+    font: var(--text-h3);
   }
 
   .lip__card {
@@ -333,9 +337,9 @@
   }
 
   .lip__body {
+    font: var(--text-body);
     max-height: 280px;
     padding: var(--space-sm);
-    font-size: var(--font-size-sm);
   }
 
   .lip__card-actions {
