@@ -7,13 +7,33 @@
 // saveDeliverable deduplicates by fileName + size and returns { skipped: true } on dupe.
 // getNextStep walks array order — it never parses M{N}-S{NN} ids.
 
+import {
+  doc,
+  collection,
+  onSnapshot,
+  setDoc,
+  deleteDoc,
+  getDocs,
+  serverTimestamp,
+  writeBatch,
+} from "firebase/firestore";
+import {
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+  listAll,
+} from "firebase/storage";
+import { firestore as db, storage } from "@/utils/firebase";
+import { onAuthChange } from "@/utils/auth";
 import { roadmapData } from "@/data/roadmapData";
 
 // ─── Storage keys ───────────────────────────────────────────────────────────
-const KEY_COMPLETED_STEPS = "atlas:completedSteps";
-const KEY_DELIVERABLES = "atlas:deliverables"; // { [stepId]: [{...}] }
+// Only two localStorage keys remain in Phase 3:
+//   - UI state (accordion open/closed, filter chips) — per-client, no cross-device sync needed
+//   - Schema version — per-client migration guard (see Block 3F decision)
+// All user data (progress, deliverables, scheduled posts) now lives in Firestore.
 const KEY_UI_STATE = "atlas:uiState"; // { [key]: value }
-const KEY_LINKEDIN_POSTS = "atlas:linkedInPosts"; // [{ stepId, day, content, scheduledFor, status, postedAt }]
 const KEY_SCHEMA_VERSION = "atlas:schemaVersion";
 
 // ─── Internal helpers ───────────────────────────────────────────────────────
@@ -40,6 +60,9 @@ function writeJson(key, value) {
   }
 }
 
+/** Pre-built Set of all valid step ids — O(1) lookup vs linear scan per call. */
+const VALID_STEP_IDS = new Set(roadmapData.map((s) => s.id));
+
 /**
  * Throws if stepId is not a string matching an entry in roadmapData.
  * Every mutating function calls this first.
@@ -48,8 +71,7 @@ function assertValidStepId(stepId) {
   if (typeof stepId !== "string" || stepId.length === 0) {
     throw new Error(`[dataService] invalid stepId: ${String(stepId)}`);
   }
-  const exists = roadmapData.some((s) => s.id === stepId);
-  if (!exists) {
+  if (!VALID_STEP_IDS.has(stepId)) {
     throw new Error(
       `[dataService] stepId "${stepId}" not found in roadmapData`,
     );
@@ -59,6 +81,206 @@ function assertValidStepId(stepId) {
 /** Generates a short, locally-unique id for deliverable records. */
 function generateId() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// ─── Firestore cache + hydration ────────────────────────────────────────────
+//
+// Components call getCompletedSteps(), getDeliverables(), etc. SYNCHRONOUSLY.
+// Phase 3 keeps that contract by hydrating an in-memory cache from Firestore
+// via onSnapshot, then serving reads from the cache. Writes go to Firestore;
+// the snapshot listener echoes them back into the cache so subsequent reads
+// see the new state.
+//
+// Hydration lifecycle:
+//   - Module load: cache is empty, isHydrated = false.
+//   - onAuthChange fires with a user → attachListeners(uid) sets up 3 onSnapshot
+//     listeners. After all 3 have fired their first callback, hydrationPromise
+//     resolves and isHydrated flips true. Layout.jsx awaits this before rendering.
+//   - onAuthChange fires with null (sign-out) → detachListeners() + clearCache().
+//     A fresh hydrationPromise is created so the next sign-in re-gates correctly.
+
+const cache = {
+  completedSteps: [],
+  deliverables: {}, // { [stepId]: Deliverable[] }
+  scheduledPosts: [],
+  currentUserId: null,
+  isHydrated: false,
+  unsubscribers: [],
+  hydrationResolvers: null,
+  hydrationPromise: null,
+  // Tracks which of the 3 collections have fired their first onSnapshot.
+  // When all three are true, we resolve hydrationPromise.
+  firstSnapshotFired: {
+    completedSteps: false,
+    deliverables: false,
+    scheduledPosts: false,
+  },
+};
+
+function buildHydrationPromise() {
+  cache.hydrationPromise = new Promise((resolve, reject) => {
+    cache.hydrationResolvers = { resolve, reject };
+  });
+}
+
+// Initialize the first hydration promise at module load so callers can
+// await it even before sign-in (the promise just won't resolve yet).
+buildHydrationPromise();
+
+function checkHydrationComplete() {
+  const { completedSteps, deliverables, scheduledPosts } =
+    cache.firstSnapshotFired;
+  if (completedSteps && deliverables && scheduledPosts && !cache.isHydrated) {
+    cache.isHydrated = true;
+    if (cache.hydrationResolvers) {
+      cache.hydrationResolvers.resolve();
+    }
+  }
+}
+
+function clearCache() {
+  cache.completedSteps = [];
+  cache.deliverables = {};
+  cache.scheduledPosts = [];
+  cache.currentUserId = null;
+  cache.isHydrated = false;
+  cache.firstSnapshotFired = {
+    completedSteps: false,
+    deliverables: false,
+    scheduledPosts: false,
+  };
+  // Create a fresh hydration promise so the next sign-in re-gates correctly.
+  buildHydrationPromise();
+}
+
+function detachListeners() {
+  for (const unsub of cache.unsubscribers) {
+    try {
+      unsub();
+    } catch (err) {
+      console.error("[dataService] unsubscribe failed:", err);
+    }
+  }
+  cache.unsubscribers = [];
+}
+
+/**
+ * Attaches onSnapshot listeners for the signed-in user.
+ * Resolves hydrationPromise after all 3 collections have fired their first
+ * snapshot callback (which Firestore guarantees, even for empty collections).
+ *
+ * Firestore paths:
+ *   users/{uid}/progress/completedSteps   — single doc with { ids: string[] }
+ *   users/{uid}/deliverables              — collection, one doc per stepId, doc.files: Deliverable[]
+ *   users/{uid}/scheduledPosts            — collection, one doc per post id
+ */
+function attachListeners(uid) {
+  cache.currentUserId = uid;
+
+  // 1. Progress (single doc) — completed steps
+  const progressDocRef = doc(db, "users", uid, "progress", "completedSteps");
+  const unsubProgress = onSnapshot(
+    progressDocRef,
+    (snapshot) => {
+      const data = snapshot.data();
+      cache.completedSteps = data && Array.isArray(data.ids) ? data.ids : [];
+      cache.firstSnapshotFired.completedSteps = true;
+      checkHydrationComplete();
+    },
+    (err) => {
+      console.error("[dataService] progress snapshot error:", err);
+      if (cache.hydrationResolvers && !cache.isHydrated) {
+        cache.hydrationResolvers.reject(err);
+      }
+    },
+  );
+  cache.unsubscribers.push(unsubProgress);
+
+  // 2. Deliverables (collection — one doc per stepId)
+  const deliverablesColRef = collection(db, "users", uid, "deliverables");
+  const unsubDeliverables = onSnapshot(
+    deliverablesColRef,
+    (snapshot) => {
+      const next = {};
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        next[docSnap.id] = Array.isArray(data.files) ? data.files : [];
+      });
+      cache.deliverables = next;
+      cache.firstSnapshotFired.deliverables = true;
+      checkHydrationComplete();
+    },
+    (err) => {
+      console.error("[dataService] deliverables snapshot error:", err);
+      if (cache.hydrationResolvers && !cache.isHydrated) {
+        cache.hydrationResolvers.reject(err);
+      }
+    },
+  );
+  cache.unsubscribers.push(unsubDeliverables);
+
+  // 3. Scheduled LinkedIn posts (collection — one doc per post)
+  const postsColRef = collection(db, "users", uid, "scheduledPosts");
+  const unsubPosts = onSnapshot(
+    postsColRef,
+    (snapshot) => {
+      const next = [];
+      snapshot.forEach((docSnap) => {
+        next.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      cache.scheduledPosts = next;
+      cache.firstSnapshotFired.scheduledPosts = true;
+      checkHydrationComplete();
+    },
+    (err) => {
+      console.error("[dataService] scheduledPosts snapshot error:", err);
+      if (cache.hydrationResolvers && !cache.isHydrated) {
+        cache.hydrationResolvers.reject(err);
+      }
+    },
+  );
+  cache.unsubscribers.push(unsubPosts);
+}
+
+// Module-load side effect: subscribe to auth state. When the user signs in,
+// attach Firestore listeners; on sign-out, detach + clear.
+if (typeof window !== "undefined") {
+  onAuthChange((user) => {
+    if (user) {
+      // If somehow already attached for the same uid, no-op.
+      if (cache.currentUserId === user.uid && cache.unsubscribers.length > 0) {
+        return;
+      }
+      // Different user (or first sign-in) → tear down and rebuild.
+      if (cache.unsubscribers.length > 0) {
+        detachListeners();
+        clearCache();
+      }
+      attachListeners(user.uid);
+    } else {
+      // Signed out.
+      detachListeners();
+      clearCache();
+    }
+  });
+}
+
+// ─── Hydration API (exported for Layout / RequireAuth) ──────────────────────
+
+/** Returns true once initial Firestore hydration has completed for the signed-in user. */
+export function isDataHydrated() {
+  return cache.isHydrated;
+}
+
+/**
+ * Resolves once initial Firestore hydration completes for the current user.
+ * If the user is not signed in, the promise stays pending until they sign in
+ * and hydration finishes. Layout.jsx awaits this before rendering children.
+ *
+ * Rejects if any of the snapshot listeners reports a fatal error.
+ */
+export function waitForHydration() {
+  return cache.hydrationPromise;
 }
 
 // ─── Schema version ─────────────────────────────────────────────────────────
@@ -106,10 +328,14 @@ export function getCurrentPhase() {
 /**
  * Returns the array of completed step ids (in completion order).
  * Always returns an array, never null.
+ *
+ * Phase 3: reads from the in-memory cache populated by the onSnapshot listener
+ * attached in attachListeners(). Synchronous — components don't need to await.
+ * Returns [] until first snapshot fires (which is fine — Layout gates rendering
+ * on waitForHydration() so components only see a populated cache).
  */
 export function getCompletedSteps() {
-  const arr = readJson(KEY_COMPLETED_STEPS, []);
-  return Array.isArray(arr) ? arr : [];
+  return Array.isArray(cache.completedSteps) ? [...cache.completedSteps] : [];
 }
 
 /**
@@ -117,18 +343,27 @@ export function getCompletedSteps() {
  * Enforces Pattern B chain rule: a Pattern B step cannot complete unless
  * all earlier Pattern B steps in the same learnChain are already complete.
  *
+ * Phase 3: writes to Firestore users/{uid}/progress/completedSteps.
+ * The onSnapshot listener will echo the write back into cache.completedSteps,
+ * so reads after this resolves see the new state.
+ *
  * Returns { ok: true, alreadyComplete?: true }.
- * Throws on invalid id or chain violation.
+ * Throws on no signed-in user, invalid id, or chain violation.
  */
-export function markStepComplete(stepId) {
+export async function markStepComplete(stepId) {
   assertValidStepId(stepId);
+
+  const uid = cache.currentUserId;
+  if (!uid) {
+    throw new Error("[dataService] markStepComplete requires signed-in user");
+  }
 
   const completed = getCompletedSteps();
   if (completed.includes(stepId)) {
     return { ok: true, alreadyComplete: true };
   }
 
-  // Pattern B chain enforcement.
+  // Pattern B chain enforcement (unchanged — validates against current cache).
   const stepIndex = roadmapData.findIndex((s) => s.id === stepId);
   const step = roadmapData[stepIndex];
   if (step.type === "learn" && step.pattern === "B" && step.learnChain) {
@@ -149,15 +384,20 @@ export function markStepComplete(stepId) {
   }
 
   const next = [...completed, stepId];
-  writeJson(KEY_COMPLETED_STEPS, next);
 
-  // Write-then-read verification for critical writes.
-  const verify = readJson(KEY_COMPLETED_STEPS, []);
-  if (!Array.isArray(verify) || !verify.includes(stepId)) {
-    throw new Error(
-      `[dataService] markStepComplete verification failed for ${stepId}`,
-    );
-  }
+  // Write to Firestore. setDoc with merge replaces the ids array atomically.
+  const progressDocRef = doc(db, "users", uid, "progress", "completedSteps");
+  await setDoc(
+    progressDocRef,
+    { ids: next, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+
+  // Optimistic cache update — snapshot listener will overwrite this with the
+  // server's authoritative state on its next callback, but updating here avoids
+  // a flicker where the UI shows the old state for ~50ms while the round-trip
+  // completes.
+  cache.completedSteps = next;
 
   return { ok: true };
 }
@@ -174,14 +414,99 @@ export function getNextStep() {
   return null;
 }
 
-/** Wipes all progress, deliverables, schedule, and UI state. For testing/reset only. */
-export function resetProgress() {
+/**
+ * Wipes server-side state for the signed-in user. Dev/testing utility.
+ *
+ * Phase 3: client-side recursive clear. NOT a Cloud Function — deleteAccount
+ * (Step 3) is the Cloud Function path. resetProgress is a lighter dev tool
+ * that keeps the user signed in.
+ *
+ * Clears:
+ *   - Firestore: users/{uid}/progress/completedSteps (single doc)
+ *   - Firestore: users/{uid}/deliverables/* (all docs in subcollection)
+ *   - Firestore: users/{uid}/scheduledPosts/* (all docs in subcollection)
+ *   - Storage:   deliverables/{uid}/* (all objects under user prefix, recursive)
+ *
+ * Preserves:
+ *   - localStorage UI state (accordion open/closed, filter chips) — harmless
+ *     and avoids a jarring reset of UI affordances.
+ *   - The auth user (stays signed in).
+ *
+ * Order: Storage first, then Firestore subcollections, then Firestore doc.
+ * Reason: if a later step fails, we'd rather have orphaned Firestore records
+ * (cheap, easy to retry) than orphaned Storage files (cost money on free tier).
+ *
+ * Cache is cleared at the end so the UI reflects empty state immediately;
+ * snapshot listeners will also fire with empty payloads as Firestore catches up.
+ *
+ * Returns { ok: true } on success.
+ * Throws on no signed-in user. Internal errors are caught, logged, and
+ * surfaced via { ok: false, error }.
+ */
+export async function resetProgress() {
+  const uid = cache.currentUserId;
+  if (!uid) {
+    throw new Error("[dataService] resetProgress requires signed-in user");
+  }
+
   try {
-    localStorage.removeItem(KEY_COMPLETED_STEPS);
-    localStorage.removeItem(KEY_DELIVERABLES);
-    localStorage.removeItem(KEY_LINKEDIN_POSTS);
-    localStorage.removeItem(KEY_UI_STATE);
-    writeJson(KEY_SCHEMA_VERSION, 1);
+    // 1. Storage: list and delete every object under deliverables/{uid}/.
+    //    listAll is non-recursive at one prefix level, but our schema is
+    //    deliverables/{uid}/{stepId}/{filename} — so we listAll the user
+    //    prefix (returns stepId "prefixes"), then for each prefix listAll
+    //    its items.
+    const userStorageRef = storageRef(storage, `deliverables/${uid}`);
+    let userStorageListing;
+    try {
+      userStorageListing = await listAll(userStorageRef);
+    } catch (err) {
+      // If the prefix has never had any uploads, listAll can throw on some
+      // SDK versions. Treat as empty.
+      if (err && err.code === "storage/object-not-found") {
+        userStorageListing = { items: [], prefixes: [] };
+      } else {
+        throw err;
+      }
+    }
+
+    // Delete top-level files (unlikely under our schema, but safe).
+    const topLevelDeletes = userStorageListing.items.map((itemRef) =>
+      deleteObject(itemRef),
+    );
+
+    // For each stepId prefix, listAll its files and delete them.
+    const nestedDeletes = userStorageListing.prefixes.map(async (prefixRef) => {
+      const stepListing = await listAll(prefixRef);
+      await Promise.all(
+        stepListing.items.map((itemRef) => deleteObject(itemRef)),
+      );
+    });
+
+    await Promise.all([...topLevelDeletes, ...nestedDeletes]);
+
+    // 2. Firestore: deliverables subcollection.
+    const deliverablesColRef = collection(db, "users", uid, "deliverables");
+    const deliverablesSnap = await getDocs(deliverablesColRef);
+    await Promise.all(
+      deliverablesSnap.docs.map((docSnap) => deleteDoc(docSnap.ref)),
+    );
+
+    // 3. Firestore: scheduledPosts subcollection.
+    const postsColRef = collection(db, "users", uid, "scheduledPosts");
+    const postsSnap = await getDocs(postsColRef);
+    await Promise.all(postsSnap.docs.map((docSnap) => deleteDoc(docSnap.ref)));
+
+    // 4. Firestore: progress doc.
+    const progressDocRef = doc(db, "users", uid, "progress", "completedSteps");
+    await deleteDoc(progressDocRef);
+
+    // 5. Clear in-memory cache so the UI immediately reflects empty state.
+    //    Snapshot listeners will also fire with empty payloads on their next
+    //    callback, but updating here avoids a flicker.
+    cache.completedSteps = [];
+    cache.deliverables = {};
+    cache.scheduledPosts = [];
+
     return { ok: true };
   } catch (err) {
     console.error("[dataService] resetProgress failed:", err);
@@ -193,46 +518,69 @@ export function resetProgress() {
 
 /**
  * Returns the array of deliverables for a stepId. Empty array if none.
- * Each entry: { id, fileName, size, uploadedAt, url }.
- *   - Phase 1: url is a blob URL (session-only, via URL.createObjectURL)
- *   - Phase 3: url is a Firebase Storage URL. Field name does not change.
+ * Each entry: { id, fileName, size, uploadedAt, url, storagePath }.
+ *   - Phase 3: url is a Firebase Storage download URL (long-lived signed URL).
+ *   - storagePath is the Firebase Storage object path, used for deletion.
+ *
+ * Reads from the in-memory cache populated by the deliverables onSnapshot
+ * listener. Defensive copy returned so callers can't mutate the cache.
  */
 export function getDeliverables(stepId) {
   assertValidStepId(stepId);
-  const all = readJson(KEY_DELIVERABLES, {});
-  const arr = all && typeof all === "object" ? all[stepId] : null;
-  return Array.isArray(arr) ? arr : [];
+  const arr = cache.deliverables[stepId];
+  return Array.isArray(arr) ? [...arr] : [];
 }
 
 /**
- * Appends a deliverable to the array for stepId.
- * Validates stepId. Deduplicates by fileName + size (case-sensitive).
+ * Uploads a file to Firebase Storage and records the deliverable in Firestore.
  *
- * Accepts: { fileName: string, size: number, url: string, uploadedAt?: string }
+ * SIGNATURE CHANGE FROM PHASE 2A:
+ *   Phase 2A: saveDeliverable(stepId, { fileName, size, url, uploadedAt? })
+ *   Phase 3:  saveDeliverable(stepId, file) where file is a File instance.
+ *             dataService now owns the Storage upload — callers pass the raw file.
+ *
+ * Process:
+ *   1. Validate stepId and that `file` is a File instance.
+ *   2. Dedup check by file.name + file.size against current cache.
+ *   3. Upload to Storage at deliverables/{uid}/{stepId}/{timestamp}-{filename}.
+ *      The timestamp prefix prevents Storage path collisions for same-named files.
+ *   4. Get the download URL.
+ *   5. setDoc the new deliverable into the array at users/{uid}/deliverables/{stepId}.
+ *      Read existing array from cache, append, write back. Snapshot listener echoes.
+ *   6. Optimistic cache update.
+ *
  * Returns: { ok: true, deliverable } | { skipped: true, reason: 'duplicate' }
+ * Throws on no signed-in user, invalid stepId, non-File argument, or upload failure.
  */
-export function saveDeliverable(stepId, fileData) {
+export async function saveDeliverable(stepId, file) {
   assertValidStepId(stepId);
-  if (!fileData || typeof fileData !== "object") {
-    throw new Error("[dataService] saveDeliverable requires fileData object");
+
+  const uid = cache.currentUserId;
+  if (!uid) {
+    throw new Error("[dataService] saveDeliverable requires signed-in user");
   }
-  const { fileName, size, url } = fileData;
-  if (typeof fileName !== "string" || fileName.length === 0) {
-    throw new Error("[dataService] saveDeliverable requires fileName string");
-  }
-  if (typeof size !== "number" || !Number.isFinite(size) || size < 0) {
+
+  if (!(file instanceof File)) {
     throw new Error(
-      "[dataService] saveDeliverable requires non-negative numeric size",
+      "[dataService] saveDeliverable requires a File instance " +
+        "(Phase 3 signature change — see function docstring)",
     );
   }
-  if (typeof url !== "string" || url.length === 0) {
-    throw new Error("[dataService] saveDeliverable requires url string");
+
+  const fileName = file.name;
+  const size = file.size;
+
+  if (typeof fileName !== "string" || fileName.length === 0) {
+    throw new Error("[dataService] file.name is empty");
+  }
+  if (typeof size !== "number" || !Number.isFinite(size) || size < 0) {
+    throw new Error("[dataService] file.size is not a valid number");
   }
 
-  const all = readJson(KEY_DELIVERABLES, {});
-  const existing = Array.isArray(all[stepId]) ? all[stepId] : [];
-
   // Dedup: same fileName AND same size already in array → skip.
+  const existing = Array.isArray(cache.deliverables[stepId])
+    ? cache.deliverables[stepId]
+    : [];
   const isDuplicate = existing.some(
     (d) => d.fileName === fileName && d.size === size,
   );
@@ -240,40 +588,112 @@ export function saveDeliverable(stepId, fileData) {
     return { skipped: true, reason: "duplicate" };
   }
 
+  // 1. Upload to Storage.
+  // Path: deliverables/{uid}/{stepId}/{timestamp}-{filename}
+  // Timestamp prefix prevents collisions if user uploads two different files
+  // with the same name to the same step at different times.
+  const timestamp = Date.now();
+  const storagePath = `deliverables/${uid}/${stepId}/${timestamp}-${fileName}`;
+  const fileRef = storageRef(storage, storagePath);
+
+  await uploadBytes(fileRef, file, {
+    contentType: file.type || "application/octet-stream",
+  });
+
+  const url = await getDownloadURL(fileRef);
+
+  // 2. Build the deliverable record.
   const deliverable = {
     id: generateId(),
     fileName,
     size,
     url,
-    uploadedAt: fileData.uploadedAt || new Date().toISOString(),
+    storagePath, // Used by deleteDeliverable to remove the Storage object.
+    uploadedAt: new Date().toISOString(),
   };
 
-  const nextAll = { ...all, [stepId]: [...existing, deliverable] };
-  writeJson(KEY_DELIVERABLES, nextAll);
+  // 3. Write to Firestore. Array-in-doc shape: one doc per stepId, files array inside.
+  const nextFiles = [...existing, deliverable];
+  const deliverableDocRef = doc(db, "users", uid, "deliverables", stepId);
+  await setDoc(
+    deliverableDocRef,
+    { files: nextFiles, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+
+  // 4. Optimistic cache update — snapshot listener will overwrite with
+  // server-authoritative state on next callback.
+  cache.deliverables = { ...cache.deliverables, [stepId]: nextFiles };
 
   return { ok: true, deliverable };
 }
 
 /**
- * Removes a deliverable by fileId from the array for stepId.
- * Validates stepId. Returns { ok: true, removed: boolean }.
+ * Removes a deliverable from Firestore AND deletes the file from Storage.
+ *
+ * Order matters:
+ *   1. Find the record (need its storagePath for Storage deletion).
+ *   2. Delete the Storage object first. If this fails, abort — better to
+ *      have a Firestore record pointing at a phantom file than a Storage
+ *      file with no record (orphaned files cost money on the free tier).
+ *   3. Update the Firestore array (filter out the deleted entry).
+ *   4. Optimistic cache update.
+ *
+ * If the array becomes empty after deletion, the document is left in place
+ * with an empty `files` array — Firestore doesn't need explicit cleanup.
+ *
+ * Returns { ok: true, removed: boolean }.
+ * Throws on no signed-in user, invalid stepId, or Storage delete failure.
  */
-export function deleteDeliverable(stepId, fileId) {
+export async function deleteDeliverable(stepId, fileId) {
   assertValidStepId(stepId);
   if (typeof fileId !== "string" || fileId.length === 0) {
     throw new Error("[dataService] deleteDeliverable requires fileId string");
   }
 
-  const all = readJson(KEY_DELIVERABLES, {});
-  const existing = Array.isArray(all[stepId]) ? all[stepId] : [];
-  const next = existing.filter((d) => d.id !== fileId);
+  const uid = cache.currentUserId;
+  if (!uid) {
+    throw new Error("[dataService] deleteDeliverable requires signed-in user");
+  }
 
-  if (next.length === existing.length) {
+  const existing = Array.isArray(cache.deliverables[stepId])
+    ? cache.deliverables[stepId]
+    : [];
+  const target = existing.find((d) => d.id === fileId);
+
+  if (!target) {
     return { ok: true, removed: false };
   }
 
-  const nextAll = { ...all, [stepId]: next };
-  writeJson(KEY_DELIVERABLES, nextAll);
+  // 1. Delete from Storage first. If this fails, throw — don't orphan files.
+  if (target.storagePath) {
+    try {
+      await deleteObject(storageRef(storage, target.storagePath));
+    } catch (err) {
+      // If the object already doesn't exist (404), proceed to Firestore cleanup.
+      // For any other error, surface it.
+      if (err && err.code === "storage/object-not-found") {
+        console.warn(
+          `[dataService] Storage object already gone: ${target.storagePath}`,
+        );
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  // 2. Update Firestore array.
+  const nextFiles = existing.filter((d) => d.id !== fileId);
+  const deliverableDocRef = doc(db, "users", uid, "deliverables", stepId);
+  await setDoc(
+    deliverableDocRef,
+    { files: nextFiles, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+
+  // 3. Optimistic cache update.
+  cache.deliverables = { ...cache.deliverables, [stepId]: nextFiles };
+
   return { ok: true, removed: true };
 }
 
@@ -302,10 +722,14 @@ export function getUIState(key) {
 /**
  * Returns the array of all scheduled LinkedIn posts across all steps.
  * Each entry: { id, stepId, day, content, scheduledFor (ISO date), status, postedAt }
+ *
+ * Phase 3: reads from the in-memory cache populated by the scheduledPosts
+ * onSnapshot listener attached in attachListeners(). Synchronous — components
+ * don't need to await. Returns [] until first snapshot fires (gated by
+ * waitForHydration in Layout).
  */
 export function getScheduledLinkedInPosts() {
-  const arr = readJson(KEY_LINKEDIN_POSTS, []);
-  return Array.isArray(arr) ? arr : [];
+  return Array.isArray(cache.scheduledPosts) ? [...cache.scheduledPosts] : [];
 }
 
 /**
@@ -317,16 +741,30 @@ export function getScheduledLinkedInPosts() {
  * When flipping to "Posted": stamps postedAt with current ISO timestamp.
  * When flipping to "Scheduled": clears postedAt (post un-marked).
  *
+ * Phase 3: writes to Firestore users/{uid}/scheduledPosts/{postId}. Only the
+ * mutable fields (status, postedAt) are written via merge — the post's
+ * immutable fields (stepId, day, content, scheduledFor) are untouched.
+ * Snapshot listener echoes the write back into cache.scheduledPosts.
+ *
  * Returns { ok: true, post } on success.
- * Throws on invalid postId, missing post, or invalid status.
+ * Throws on no signed-in user, invalid postId, missing post, or invalid status.
  */
-export function setLinkedInPostStatus(postId, status) {
+export async function setLinkedInPostStatus(postId, status) {
   if (typeof postId !== "string" || postId.length === 0) {
-    throw new Error("[dataService] setLinkedInPostStatus requires postId string");
+    throw new Error(
+      "[dataService] setLinkedInPostStatus requires postId string",
+    );
   }
   if (status !== "Scheduled" && status !== "Posted") {
     throw new Error(
       `[dataService] setLinkedInPostStatus status must be "Scheduled" or "Posted", got: ${String(status)}`,
+    );
+  }
+
+  const uid = cache.currentUserId;
+  if (!uid) {
+    throw new Error(
+      "[dataService] setLinkedInPostStatus requires signed-in user",
     );
   }
 
@@ -337,14 +775,22 @@ export function setLinkedInPostStatus(postId, status) {
   }
 
   const current = all[index];
-  const updated = {
-    ...current,
-    status,
-    postedAt: status === "Posted" ? new Date().toISOString() : null,
-  };
+  const postedAt = status === "Posted" ? new Date().toISOString() : null;
 
+  // Write only the mutable delta — merge preserves immutable fields.
+  const postDocRef = doc(db, "users", uid, "scheduledPosts", postId);
+  await setDoc(
+    postDocRef,
+    { status, postedAt, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+
+  const updated = { ...current, status, postedAt };
+
+  // Optimistic cache update — snapshot listener will overwrite on next callback.
   const next = [...all.slice(0, index), updated, ...all.slice(index + 1)];
-  writeJson(KEY_LINKEDIN_POSTS, next);
+  cache.scheduledPosts = next;
+
   return { ok: true, post: updated };
 }
 
@@ -353,9 +799,23 @@ export function setLinkedInPostStatus(postId, status) {
  * Validates stepId. Validates posts is an array of { day, content }.
  * scheduledFor = completionDate + day offset.
  *
- * Replaces any existing scheduled posts for this stepId (idempotent re-completion).
+ * Phase 3: writes to Firestore users/{uid}/scheduledPosts as one doc per post,
+ * batched in a single atomic writeBatch.
+ *
+ * Idempotent re-completion strategy (deterministic ids):
+ *   Each post gets a deterministic id of `${stepId}-day${day}-${index}` where
+ *   index is the entry's position in the linkedInSchedule array. Re-completing
+ *   the same step writes to the SAME doc ids — clean overwrite, no orphans.
+ *
+ * Status preservation:
+ *   If a post with the same deterministic id already exists in the cache AND
+ *   has status "Posted", that status and its postedAt timestamp are preserved.
+ *   Re-completing a step does not silently revert a Posted entry to Scheduled.
+ *
+ * Returns { ok: true, count }.
+ * Throws on no signed-in user, invalid stepId, invalid posts shape, or write failure.
  */
-export function scheduleLinkedInPosts(stepId, posts, completionDate) {
+export async function scheduleLinkedInPosts(stepId, posts, completionDate) {
   assertValidStepId(stepId);
   if (!Array.isArray(posts)) {
     throw new Error("[dataService] scheduleLinkedInPosts requires posts array");
@@ -368,11 +828,21 @@ export function scheduleLinkedInPosts(stepId, posts, completionDate) {
     );
   }
 
-  const existing = getScheduledLinkedInPosts().filter(
-    (p) => p.stepId !== stepId,
-  );
+  const uid = cache.currentUserId;
+  if (!uid) {
+    throw new Error(
+      "[dataService] scheduleLinkedInPosts requires signed-in user",
+    );
+  }
 
-  const scheduled = posts.map((p) => {
+  // Index existing posts for this step by their deterministic id so we can
+  // preserve "Posted" status across re-completion.
+  const existingForStep = getScheduledLinkedInPosts().filter(
+    (p) => p.stepId === stepId,
+  );
+  const existingById = new Map(existingForStep.map((p) => [p.id, p]));
+
+  const scheduled = posts.map((p, index) => {
     if (typeof p.day !== "number" || typeof p.content !== "string") {
       throw new Error(
         "[dataService] each linkedInSchedule entry needs { day:number, content:string }",
@@ -380,19 +850,43 @@ export function scheduleLinkedInPosts(stepId, posts, completionDate) {
     }
     const scheduledFor = new Date(completedAt);
     scheduledFor.setDate(scheduledFor.getDate() + p.day);
+
+    const id = `${stepId}-day${p.day}-${index}`;
+    const prior = existingById.get(id);
+    const preserved =
+      prior && prior.status === "Posted"
+        ? { status: "Posted", postedAt: prior.postedAt }
+        : { status: "Scheduled", postedAt: null };
+
     return {
-      id: generateId(),
+      id,
       stepId,
       day: p.day,
       content: p.content,
       scheduledFor: scheduledFor.toISOString(),
-      status: "Scheduled",
-      postedAt: null,
+      ...preserved,
     };
   });
 
-  const next = [...existing, ...scheduled];
-  writeJson(KEY_LINKEDIN_POSTS, next);
+  // Batched atomic write — all N posts succeed or none do.
+  const batch = writeBatch(db);
+  for (const post of scheduled) {
+    const postDocRef = doc(db, "users", uid, "scheduledPosts", post.id);
+    const { id, ...docData } = post;
+    batch.set(
+      postDocRef,
+      { ...docData, updatedAt: serverTimestamp() },
+      { merge: true },
+    );
+  }
+  await batch.commit();
+
+  // Optimistic cache update — replace all posts for this stepId.
+  const otherPosts = getScheduledLinkedInPosts().filter(
+    (p) => p.stepId !== stepId,
+  );
+  cache.scheduledPosts = [...otherPosts, ...scheduled];
+
   return { ok: true, count: scheduled.length };
 }
 
@@ -402,19 +896,27 @@ export function scheduleLinkedInPosts(stepId, posts, completionDate) {
 // import.meta.env.PROD flag.
 if (typeof window !== "undefined" && !import.meta.env.PROD) {
   window.dataService = {
+    // Hydration
+    isDataHydrated,
+    waitForHydration,
+    // Progress
     getCurrentPhase,
     markStepComplete,
     getCompletedSteps,
     getNextStep,
+    resetProgress,
+    // Deliverables
     saveDeliverable,
     getDeliverables,
     deleteDeliverable,
+    // UI state
     saveUIState,
     getUIState,
+    // LinkedIn schedule
     getScheduledLinkedInPosts,
     scheduleLinkedInPosts,
     setLinkedInPostStatus,
-    resetProgress,
+    // Schema version
     getSchemaVersion,
     setSchemaVersion,
   };
