@@ -15,6 +15,7 @@ import {
   persistentMultipleTabManager,
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { getFunctions } from "firebase/functions";
 
 // ─── Config validation ─────────────────────────────────────────────────────
 // Fail loudly at module load if any env var is missing. The default Firebase
@@ -62,9 +63,17 @@ export const firestore = initializeFirestore(app, {
 
 export const storage = getStorage(app);
 
+// getFunctions(app, region) — the region MUST match the function's deployment
+// region (us-central1, per Phase 3 MY_PROGRESS § Cloud Function constants).
+// v2 onCall functions deploy to a different URL pattern than v1; without an
+// explicit region the SDK builds the wrong URL and the browser sees a CORS
+// preflight failure against cloudfunctions.net instead of the actual call
+// resolving via Firebase's wire protocol.
+export const functions = getFunctions(app, "us-central1");
+
 // ─── Dev console exposure ──────────────────────────────────────────────────
 // Lets the operator run `firebase.auth.currentUser` in DevTools during
 // Phase 3 smoke tests. Removed in production builds via Vite's PROD flag.
 if (typeof window !== "undefined" && !import.meta.env.PROD) {
-  window.firebase = { app, auth, firestore, storage };
+  window.firebase = { app, auth, firestore, storage, functions };
 }

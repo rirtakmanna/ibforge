@@ -24,8 +24,8 @@ import {
   deleteObject,
   listAll,
 } from "firebase/storage";
-import { getFunctions, httpsCallable } from "firebase/functions";
-import { firestore as db, storage } from "@/utils/firebase";
+import { httpsCallable } from "firebase/functions";
+import { firestore as db, storage, functions } from "@/utils/firebase";
 import { onAuthChange } from "@/utils/auth";
 import { roadmapData } from "@/data/roadmapData";
 
@@ -573,9 +573,10 @@ export async function deleteAccount() {
   }
 
   // Call the Cloud Function. httpsCallable handles auth token injection
-  // automatically — the function reads context.auth.uid server-side.
-  const fns = getFunctions();
-  const deleteFn = httpsCallable(fns, "deleteAccount");
+  // automatically — the function reads request.auth.uid server-side (v2 onCall).
+  // The `functions` instance is initialized in firebase.js with explicit
+  // region "us-central1" so httpsCallable builds the correct v2 callable URL.
+  const deleteFn = httpsCallable(functions, "deleteAccount");
 
   const result = await deleteFn();
 
