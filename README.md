@@ -46,7 +46,9 @@ Work only counts when it exists.
 | Notion workspace | No gate. No sequential lock. Posts are manual. |
 | ATLAS | Steps unlock only when the previous is complete. Deliverables must be uploaded. Posts are generated from real work and scheduled automatically. |
 
-<!-- Dashboard screenshot added Phase 4 -->
+<p align="center">
+  <img src="./docs/screenshots/01-dashboard.png" alt="ATLAS Dashboard — current position, overall progress, next step, and Roadshow Status" width="100%">
+</p>
 
 ---
 
@@ -155,7 +157,39 @@ npm run build
 
 ## Screenshots
 
-<!-- Screenshots added after Phase 4 deployment -->
+## Screenshots
+
+### Roadmap — sequential lock enforcement
+
+Every step is locked until the previous is complete. The accordion groups steps by Module; locked, active, and complete states are visually distinct.
+
+<p align="center">
+  <img src="./docs/screenshots/02-roadmap-expanded.png" alt="Roadmap page with one Module accordion expanded showing learn, watch, and company-step cards in locked, active, and complete states" width="100%">
+</p>
+
+### Step Detail — APPLY + BUILD
+
+Company steps split into APPLY (focus, valuation methods, financial models, sub-page navigation to Generate Project and LinkedIn Posts) and BUILD (deliverable spec, upload zone, uploaded files list, Mark Complete gate).
+
+<p align="center">
+  <img src="./docs/screenshots/03-step-detail.png" alt="Step Detail page for a company-step showing both APPLY and BUILD panels with upload zone and Mark Complete button" width="100%">
+</p>
+
+### Portfolio — every uploaded deliverable
+
+Filter chips appear only for steps with uploads. Files are downloadable and deletable.
+
+<p align="center">
+  <img src="./docs/screenshots/04-portfolio.png" alt="Portfolio page listing uploaded deliverables grouped by step, with filter chips" width="100%">
+</p>
+
+### Calendar — auto-scheduled LinkedIn posts
+
+Completing a company step schedules its LinkedIn posts onto the Calendar at their day-offsets. Each scheduled date shows a marker; clicking a date reveals the posts due that day.
+
+<p align="center">
+  <img src="./docs/screenshots/05-calendar.png" alt="Calendar page in month view with LinkedIn post markers on scheduled dates" width="100%">
+</p>
 
 ---
 
