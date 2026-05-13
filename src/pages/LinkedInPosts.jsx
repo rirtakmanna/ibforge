@@ -39,9 +39,11 @@ import {
   getScheduledLinkedInPosts,
   setLinkedInPostStatus,
   saveEnhancedPosts,
+  saveEnhancedPostForId,
 } from "@/utils/dataService";
 import {
   generateBatchPosts,
+  generateSinglePost,
   isSessionLimitReached,
 } from "@/utils/geminiClient";
 
@@ -124,9 +126,43 @@ function getEffectiveStatus(post) {
 
 // ─── Per-post card ──────────────────────────────────────────────────────────
 
-function PostCard({ post, total, filesToUpload, onStatusChange }) {
+function PostCard({
+  post,
+  total,
+  filesToUpload,
+  onStatusChange,
+  isBatchGenerating,
+  onTransientMsg,
+  companyName,
+  stepTitle,
+  qualityBar,
+}) {
   const [copied, setCopied] = useState(false);
   const [toggling, setToggling] = useState(false);
+
+  // ─── Per-post regenerate state (Block 5G.3) ───
+  // isRegenerating: in-flight lock — disables button while request is pending.
+  // cooldown:       2-second post-resolve lock (per §Gemini Rate Control).
+  // confirmState:   "idle" | "confirming" — two-step confirm UX when the
+  //                 post already has enhancedContent. Bypassed when fresh.
+  // confirmTimerRef: 5-second timeout id that reverts confirmState to "idle"
+  //                  if the operator doesn't confirm or cancel.
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
+  const [confirmState, setConfirmState] = useState("idle");
+  const confirmTimerRef = useRef(null);
+
+  // Cancel any pending confirm timer when the card unmounts (route change
+  // away from /step/:id/linkedin) — otherwise the timer fires against a
+  // stale setState and produces a React warning.
+  useEffect(() => {
+    return () => {
+      if (confirmTimerRef.current) {
+        window.clearTimeout(confirmTimerRef.current);
+        confirmTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Per Override 6: type badge and title both derive from the SEED (post.content).
   // The header acts as the stable identity for the post; the body is the
@@ -181,6 +217,138 @@ function PostCard({ post, total, filesToUpload, onStatusChange }) {
       setToggling(false);
     }
   };
+
+  // ─── Per-post regenerate (Block 5G.3) ────────────────────────────────────
+  // Click flow:
+  //   confirmState === "idle":
+  //     - if hasEnhanced → setConfirmState("confirming"), start 5s revert timer
+  //     - else            → fire generateSinglePost immediately
+  //   confirmState === "confirming":
+  //     - "Confirm Replace?" click → fire generateSinglePost
+  //     - "Cancel" click             → revert to idle, clear timer
+  //
+  // Disabled when: batch generating, this card already regenerating, in
+  // post-success cooldown, or session limit reached. The session-limit
+  // check is read inside the click handler too — defensive in case the
+  // limit was hit by another component since the last render.
+
+  const sessionLimitHit = isSessionLimitReached();
+  const regenerateDisabled =
+    Boolean(isBatchGenerating) ||
+    isRegenerating ||
+    cooldown ||
+    sessionLimitHit;
+
+  const startConfirmTimer = () => {
+    if (confirmTimerRef.current) {
+      window.clearTimeout(confirmTimerRef.current);
+    }
+    confirmTimerRef.current = window.setTimeout(() => {
+      setConfirmState("idle");
+      confirmTimerRef.current = null;
+    }, 5000);
+  };
+
+  const clearConfirmTimer = () => {
+    if (confirmTimerRef.current) {
+      window.clearTimeout(confirmTimerRef.current);
+      confirmTimerRef.current = null;
+    }
+  };
+
+  const runRegenerate = async () => {
+    clearConfirmTimer();
+    setConfirmState("idle");
+
+    // Defensive — UI should already block this, but be explicit.
+    if (regenerateDisabled) return;
+
+    setIsRegenerating(true);
+    try {
+      // Seed: ALWAYS the raw roadmapData content. Regenerating from the
+      // existing enhancedContent would compound model drift across retries.
+      // post.content is the seed; post.enhancedContent (if present) is
+      // what we're replacing.
+      const outcome = await generateSinglePost({
+        seedContent: post.content,
+        companyName,
+        stepTitle,
+        qualityBar,
+        postType,
+      });
+
+      if (outcome && outcome.ok && typeof outcome.enhanced === "string") {
+        try {
+          await saveEnhancedPostForId(post.id, outcome.enhanced);
+          if (typeof onTransientMsg === "function") {
+            onTransientMsg(`Post ${post.__index + 1} regenerated.`, "success");
+          }
+          // Refresh page-level data so the chip swaps + body updates.
+          onStatusChange();
+        } catch (err) {
+          console.error(
+            "[LinkedInPosts] saveEnhancedPostForId failed:",
+            err,
+          );
+          if (typeof onTransientMsg === "function") {
+            onTransientMsg("Could not save enhanced post.", "error");
+          }
+        }
+      } else {
+        const reason =
+          outcome && outcome.reason ? String(outcome.reason) : "unknown";
+        if (typeof onTransientMsg === "function") {
+          onTransientMsg(
+            `Regenerate unavailable — keeping current post (${reason}).`,
+            "info",
+          );
+        }
+      }
+    } catch (err) {
+      console.error("[LinkedInPosts] runRegenerate failed:", err);
+      if (typeof onTransientMsg === "function") {
+        onTransientMsg("Regenerate failed — please try again.", "error");
+      }
+    } finally {
+      // ALWAYS clear in-flight, ALWAYS enter cooldown — even on fallback or
+      // throw. Per §Gemini Rate Control.
+      setIsRegenerating(false);
+      setCooldown(true);
+      window.setTimeout(() => setCooldown(false), 2000);
+    }
+  };
+
+  const handleRegenerateClick = () => {
+    if (regenerateDisabled) return;
+    if (confirmState === "confirming") {
+      // Second click in confirm state = go ahead with replace.
+      runRegenerate();
+      return;
+    }
+    // First click.
+    if (hasEnhanced) {
+      // Existing content to replace → require confirm.
+      setConfirmState("confirming");
+      startConfirmTimer();
+    } else {
+      // Fresh post (no enhancedContent yet) → fire immediately.
+      runRegenerate();
+    }
+  };
+
+  const handleRegenerateCancel = () => {
+    clearConfirmTimer();
+    setConfirmState("idle");
+  };
+
+  // Button label state machine — priority order matters.
+  let regenerateLabel;
+  if (isBatchGenerating) regenerateLabel = "REGENERATE";
+  else if (sessionLimitHit) regenerateLabel = "LIMIT REACHED";
+  else if (isRegenerating) regenerateLabel = "REGENERATING…";
+  else if (cooldown) regenerateLabel = "COOLDOWN…";
+  else if (confirmState === "confirming") regenerateLabel = "CONFIRM REPLACE?";
+  else regenerateLabel = "REGENERATE";
 
   const statusChipClass = `lip__chip lip__chip--${effectiveStatus.toLowerCase()}`;
   const toggleLabel =
@@ -249,6 +417,42 @@ function PostCard({ post, total, filesToUpload, onStatusChange }) {
         >
           {toggleLabel}
         </button>
+      </div>
+
+      {/* AI lifecycle row — regenerate + (when in confirm state) cancel.
+          Visually separated from the post-lifecycle row above so the two
+          mental models don't get tangled. */}
+      <div className="lip__card-ai-actions">
+        <button
+          type="button"
+          className={
+            confirmState === "confirming"
+              ? "lip__action lip__action--ai lip__action--ai-confirm"
+              : "lip__action lip__action--ai"
+          }
+          onClick={handleRegenerateClick}
+          disabled={regenerateDisabled}
+          aria-busy={isRegenerating}
+          aria-disabled={regenerateDisabled}
+          aria-label={
+            confirmState === "confirming"
+              ? `Confirm regenerate post ${post.__index + 1}`
+              : `Regenerate post ${post.__index + 1} with AI`
+          }
+        >
+          {regenerateLabel}
+        </button>
+
+        {confirmState === "confirming" && !isRegenerating && (
+          <button
+            type="button"
+            className="lip__action lip__action--secondary lip__action--ai-cancel"
+            onClick={handleRegenerateCancel}
+            aria-label={`Cancel regenerate post ${post.__index + 1}`}
+          >
+            CANCEL
+          </button>
+        )}
       </div>
     </motion.article>
   );
@@ -549,6 +753,15 @@ function LinkedInPosts() {
                 total={persistedPosts.length}
                 filesToUpload={filesToUpload}
                 onStatusChange={handleStatusChange}
+                isBatchGenerating={isGenerating}
+                onTransientMsg={setTransientMsg}
+                companyName={companyName}
+                stepTitle={step.title}
+                qualityBar={
+                  (step.build && step.build.qualityBar) ||
+                  (step.apply && step.apply.focusDo) ||
+                  ""
+                }
               />
             );
           })}

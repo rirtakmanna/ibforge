@@ -370,6 +370,85 @@
   cursor: not-allowed;
 }
 
+/* ─── AI lifecycle row (Block 5G.4) ───────────────────────────────────── */
+
+/* Row container for per-card regenerate actions. Sits below .lip__card-actions
+ * so post-lifecycle buttons (Post on LinkedIn, Mark as Posted) and AI-
+ * lifecycle buttons (Regenerate, Cancel) are visually separated.
+ *
+ * Tighter top margin than the gap between sections — the AI row is a
+ * subordinate action cluster, not a peer of the main two-button row. */
+.lip__card-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px dashed var(--color-border);
+}
+
+/* AI button variant — visually distinct from the primary (electric blue
+ * filled) and secondary (transparent + border) buttons. Uses an outlined
+ * electric blue treatment so it reads as "AI/secondary action" without
+ * competing with the primary "POST ON LINKEDIN →" call to action.
+ *
+ * The smaller padding (vs .lip__action default) signals it's a secondary
+ * affordance within the card. Still meets 44px min-height for touch. */
+.lip__action--ai {
+  background-color: transparent;
+  color: var(--color-electric-blue);
+  border-color: var(--color-electric-blue);
+  padding: var(--space-xs) var(--space-md);
+}
+
+.lip__action--ai:hover:not(:disabled) {
+  background-color: var(--color-electric-blue);
+  color: var(--color-black);
+  border-color: var(--color-electric-blue);
+}
+
+.lip__action--ai:disabled {
+  color: var(--color-text-disabled);
+  border-color: var(--color-border);
+  background-color: transparent;
+  cursor: not-allowed;
+}
+
+/* Confirm-state styling — the "CONFIRM REPLACE?" intermediate state.
+ * Switches from outlined to filled with the warning amber color, signalling
+ * "destructive action — review before proceeding." Matches the destructive-
+ * confirm visual weight established in DESIGN DECISIONS D51 (Phase 2B).
+ *
+ * Inherits .lip__action--ai's padding and base structure — only the
+ * color treatment changes. */
+.lip__action--ai-confirm {
+  background-color: var(--color-warning-amber);
+  color: var(--color-black);
+  border-color: var(--color-warning-amber);
+}
+
+.lip__action--ai-confirm:hover:not(:disabled) {
+  background-color: var(--color-warning-amber);
+  color: var(--color-black);
+  border-color: var(--color-warning-amber);
+  /* Hover state intentionally identical to base — the amber confirm state
+   * is already "live" and shouldn't gain extra visual weight on hover.
+   * A subtle scale lift would be appropriate but Framer Motion isn't
+   * wired here; static treatment is fine for v1. */
+}
+
+/* Cancel button paired with confirm-state. Inherits .lip__action--secondary
+ * baseline (transparent + border). The extra class is currently a hook for
+ * any future spacing tweaks specific to the cancel-next-to-confirm pairing. */
+.lip__action--ai-cancel {
+  /* Empty by design — placeholder hook. Inherits all visual styling
+   * from .lip__action--secondary. If a future iteration wants the cancel
+   * button to be visually distinct (e.g. red outline, smaller weight),
+   * the rules go here without touching .lip__action--secondary's other
+   * uses elsewhere in the file. */
+}
+
 /* ─── Responsive — Mobile (≤767px) ────────────────────────────────────── */
 
 @media (max-width: 767px) {
