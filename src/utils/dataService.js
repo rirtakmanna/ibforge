@@ -24,6 +24,7 @@ import {
   deleteObject,
   listAll,
 } from "firebase/storage";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { firestore as db, storage } from "@/utils/firebase";
 import { onAuthChange } from "@/utils/auth";
 import { roadmapData } from "@/data/roadmapData";
@@ -514,10 +515,100 @@ export async function resetProgress() {
   }
 }
 
+// ─── Account deletion (Cloud Function path) ─────────────────────────────────
+
+/**
+ * Permanently deletes the signed-in user's account.
+ *
+ * This is the Cloud Function path — NEVER attempt to delete data client-side.
+ * The Web SDK has no recursive delete; client-side deletion is guaranteed to
+ * orphan Firestore subcollection docs and Storage files. See PROJECT KICKOFF
+ * §"WHY ACCOUNT DELETION IS A CLOUD FUNCTION (NOT CLIENT-SIDE)" for the full
+ * rationale.
+ *
+ * Flow:
+ *   1. Call the deleteAccount Cloud Function via httpsCallable.
+ *      The function (deployed in Block 5B) runs under admin credentials and
+ *      recursively deletes:
+ *        - Firestore: users/{uid} and ALL subcollections
+ *        - Storage:   deliverables/{uid}/ and ALL files beneath it
+ *        - Auth:      the auth user record itself (LAST — guarantees no race)
+ *   2. Wait for { success: true } from the function. If it throws or returns
+ *      anything else, THROW — leave UI state untouched so the operator can
+ *      see the error and retry. Partial cleanup on the client would create
+ *      a half-deleted impression that doesn't match server reality.
+ *   3. On success: clear localStorage (UI state, schema version) and redirect
+ *      to /login. The auth user is already gone server-side, so the client
+ *      is implicitly signed out — no signOut() call required (and calling it
+ *      would race against the already-deleted user).
+ *
+ * Caller contract (Layout.jsx wires this in Block 5E.3):
+ *   - Caller is responsible for the two-step confirm UX (warning dialog +
+ *     email-match input). This function does ZERO confirmation work.
+ *   - Caller should disable all UI and show a full-screen "Deleting your
+ *     account…" overlay BEFORE awaiting this function. The Cloud Function
+ *     can take 10–30s for users with many files.
+ *   - On thrown error: caller dismisses the overlay and shows a toast.
+ *     UI state remains untouched (this function only mutates state after
+ *     server confirms success).
+ *
+ * Does NOT throw on "no signed-in user" — instead returns early with
+ * { ok: false, reason: "not-signed-in" } since calling delete without a
+ * user is a no-op rather than an error condition.
+ *
+ * Returns { ok: true } on success — but note that the function navigates
+ * away to /login before the caller's await resolves, so success-path code
+ * after the call is effectively unreachable. This is intentional: the only
+ * way the caller observes a non-success outcome is via a thrown error.
+ *
+ * Throws on:
+ *   - Cloud Function rejection (unauthenticated, internal error, etc.)
+ *   - Cloud Function returns success: false
+ *   - Network failure reaching the Cloud Function
+ */
+export async function deleteAccount() {
+  const uid = cache.currentUserId;
+  if (!uid) {
+    return { ok: false, reason: "not-signed-in" };
+  }
+
+  // Call the Cloud Function. httpsCallable handles auth token injection
+  // automatically — the function reads context.auth.uid server-side.
+  const fns = getFunctions();
+  const deleteFn = httpsCallable(fns, "deleteAccount");
+
+  const result = await deleteFn();
+
+  if (!result || !result.data || result.data.success !== true) {
+    throw new Error(
+      "[dataService] deleteAccount: Cloud Function returned non-success " +
+        `(${JSON.stringify(result && result.data)})`,
+    );
+  }
+
+  // Server-side state is gone. Clear client-side state and redirect.
+  // localStorage.clear() is intentional — wipes both UI state and schema
+  // version. The next sign-in (with any account) starts fresh.
+  try {
+    localStorage.clear();
+  } catch (err) {
+    // Non-fatal — redirect still happens. Log but don't throw.
+    console.warn("[dataService] localStorage.clear() failed:", err);
+  }
+
+  // Hard redirect (not React Router navigate) — we want a full page reload
+  // so the auth state, dataService cache, and any in-flight listeners are
+  // all torn down cleanly. The detachListeners() path in onAuthChange will
+  // also fire as the server-side auth user disappears, but a hard nav makes
+  // the cleanup explicit.
+  window.location.href = "/login";
+
+  return { ok: true };
+}
+
 // ─── Deliverables ───────────────────────────────────────────────────────────
 
 /**
- * Returns the array of deliverables for a stepId. Empty array if none.
  * Each entry: { id, fileName, size, uploadedAt, url, storagePath }.
  *   - Phase 3: url is a Firebase Storage download URL (long-lived signed URL).
  *   - storagePath is the Firebase Storage object path, used for deletion.

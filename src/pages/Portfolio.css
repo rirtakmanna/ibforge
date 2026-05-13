@@ -393,7 +393,19 @@
 /* ─── Mobile (<768px) ──────────────────────────────────────────────────── */
 @media (max-width: 767px) {
   .portfolio {
-    padding: var(--space-xl) var(--space-md);
+    /* Belt-and-suspenders: Layout.css already reserves dock space on
+       .layout-main, but mobile browsers (notably iOS Safari) can collapse
+       padding-bottom on a flex:1 child when content overflows in a nested
+       scroll container (.portfolio__table-wrap has overflow-x:auto). We
+       repeat the dock reservation on the page root so the last document
+       card always clears the fixed bottom dock. */
+    padding-top: var(--space-xl);
+    padding-right: var(--space-md);
+    padding-left: var(--space-md);
+    padding-bottom: calc(
+      var(--nav-height-mobile-bottom) + env(safe-area-inset-bottom) +
+        var(--space-md)
+    );
   }
 
   .portfolio__title {

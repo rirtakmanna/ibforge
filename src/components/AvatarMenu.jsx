@@ -23,7 +23,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-import { getCurrentUser, signOut, deleteAccount } from "@/utils/auth";
+import { getCurrentUser, signOut } from "@/utils/auth";
 import "./AvatarMenu.css";
 
 function getInitials(name) {
@@ -39,7 +39,7 @@ function getFirstName(name) {
   return name.trim().split(/\s+/)[0] || "";
 }
 
-function AvatarMenu({ variant = "desktop" }) {
+function AvatarMenu({ variant = "desktop", onRequestDeleteAccount }) {
   const navigate = useNavigate();
   const user = getCurrentUser();
   const [isOpen, setIsOpen] = useState(false);
@@ -54,14 +54,13 @@ function AvatarMenu({ variant = "desktop" }) {
       key: "delete",
       label: "Delete account",
       destructive: true,
-      onSelect: async () => {
-        const result = await deleteAccount();
-        if (!result.ok) {
-          // Phase 3 replaces this with the real confirmation modal flow.
-          // For now: surface via console + a lightweight alert. Toast component
-          // arrives in a later phase; alert is the documented placeholder.
-          // eslint-disable-next-line no-alert
-          alert("Account deletion is not yet available.");
+      onSelect: () => {
+        // Delegation: Layout owns the two-step confirm modal + overlay + the
+        // actual dataService.deleteAccount() call. AvatarMenu just asks for
+        // the flow to open. Silent no-op if Layout didn't wire the callback
+        // (defensive — every real <AvatarMenu> instance in Layout passes it).
+        if (typeof onRequestDeleteAccount === "function") {
+          onRequestDeleteAccount();
         }
       },
     },

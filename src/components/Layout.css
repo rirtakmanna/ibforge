@@ -322,3 +322,205 @@
     );
   }
 }
+
+/* ─── Delete-account modal + overlay ──────────────────────────────────────
+ *
+ * Z-index ladder:
+ *   --z-nav            = sticky top bar + fixed bottom dock
+ *   1000 (literal)     = modal backdrop + panel
+ *   1010 (literal)     = full-screen "Deleting…" overlay (sits above modal
+ *                        so the cross-fade is layered correctly)
+ *
+ * Literal z-index values are used because variables.css is FROZEN per
+ * Phase 2.5 MY_PROGRESS.md. If a future phase adds --z-modal, swap these
+ * literals for the token in one Update Protocol pass.
+ *
+ * Sharp corners only. Brand tokens for all colors and typography.
+ */
+
+.layout-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.layout-modal-panel {
+  width: 100%;
+  max-width: 480px;
+  padding: var(--space-2xl);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.layout-modal-title {
+  font: var(--text-h2);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.layout-modal-body {
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.layout-modal-email {
+  display: inline-block;
+  margin-top: var(--space-xs);
+  font: var(--text-mono);
+  color: var(--color-text-primary);
+  word-break: break-all;
+}
+
+.layout-modal-input {
+  width: 100%;
+  padding: var(--space-md);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  font: var(--text-mono);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color var(--duration-base) linear;
+}
+
+.layout-modal-input:focus,
+.layout-modal-input:focus-visible {
+  border-color: var(--color-electric-blue);
+}
+
+.layout-modal-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.layout-modal-error {
+  margin: 0;
+  font: var(--text-small);
+  color: var(--color-negative);
+}
+
+.layout-modal-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: flex-end;
+  margin-top: var(--space-sm);
+}
+
+.layout-modal-btn {
+  min-height: 44px;
+  padding: 0 var(--space-lg);
+  font: var(--text-button);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  cursor: pointer;
+  /* D51 carry-forward (Phase 2B): destructive-confirm modal buttons use
+     2px border for heavier visual weight. Match portfolio__modal-btn. */
+  border: 2px solid transparent;
+  background: transparent;
+  transition:
+    background var(--duration-base) linear,
+    border-color var(--duration-base) linear,
+    color var(--duration-base) linear;
+}
+
+.layout-modal-btn--secondary {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+
+.layout-modal-btn--secondary:hover {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
+}
+
+.layout-modal-btn--destructive {
+  color: var(--color-negative);
+  border-color: var(--color-negative);
+}
+
+.layout-modal-btn--destructive:hover:not(:disabled) {
+  background: var(--color-negative);
+  color: var(--color-bg-primary);
+}
+
+.layout-modal-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Full-screen "Deleting…" overlay ─── */
+
+.layout-delete-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  background: var(--color-bg-primary);
+}
+
+.layout-delete-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-lg);
+  text-align: center;
+  max-width: 480px;
+}
+
+.layout-delete-overlay-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-electric-blue);
+  border-radius: 50%;
+  /* Rotation handled by Framer Motion in Layout.jsx (Rule #4 compliance).
+     No CSS @keyframes here — only the static ring shape. */
+}
+
+.layout-delete-overlay-text {
+  margin: 0;
+  font: var(--text-h3);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-primary);
+}
+
+.layout-delete-overlay-subtext {
+  margin: 0;
+  font: var(--text-small);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* ─── Modal breakpoints ─── */
+
+@media (max-width: 767px) {
+  .layout-modal-backdrop {
+    padding: var(--space-md);
+    align-items: flex-start;
+    padding-top: calc(var(--nav-height-mobile-top) + var(--space-lg));
+  }
+  .layout-modal-panel {
+    padding: var(--space-xl);
+    gap: var(--space-md);
+  }
+  .layout-modal-actions {
+    flex-direction: column-reverse;
+  }
+  .layout-modal-btn {
+    width: 100%;
+  }
+}

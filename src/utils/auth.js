@@ -1,15 +1,20 @@
 // src/utils/auth.js
 //
-// Firebase Auth wrapper. Public API is identical to the Phase 1/2A placeholder
-// (getCurrentUser, signInWithGoogle, signOut, deleteAccount) plus one new export
-// added in Phase 3: onAuthChange(callback).
+// Firebase Auth wrapper. Public API: getCurrentUser, onAuthChange,
+// signInWithGoogle, getGoogleRedirectResult, signOut.
+//
+// Account deletion is NOT in this file — it lives in dataService.deleteAccount()
+// because it must call the deleteAccount Cloud Function via httpsCallable and
+// the Cloud Function does ALL the work (recursive Firestore + Storage + Auth
+// delete under admin credentials). Components import deleteAccount from
+// dataService, not from auth.
 //
 // Components import from here; they never touch firebase/auth directly.
 // dataService.js calls onAuthChange to hydrate its in-memory cache on sign-in.
 //
 // signInWithGoogle uses popup first, falls back to redirect on popup-blocked.
-// Login.jsx (Phase 3 Step 2) is responsible for calling getRedirectResult on mount
-// to capture the user after a redirect-flow round-trip.
+// Login.jsx is responsible for calling getGoogleRedirectResult on mount to
+// capture the user after a redirect-flow round-trip.
 
 import {
   GoogleAuthProvider,
@@ -116,17 +121,4 @@ export async function signOut() {
     console.error("[auth] signOut failed:", err);
     throw err;
   }
-}
-
-// ─── Delete account (stub until Phase 3 Step 3) ────────────────────────────
-//
-// The full implementation calls the deleteAccount Cloud Function and is wired
-// in Step 3 inside dataService.js. This stub remains here only so the export
-// signature is stable; nothing should call auth.deleteAccount() directly —
-// callers use dataService.deleteAccount() which goes through the Cloud Function.
-
-export async function deleteAccount() {
-  throw new Error(
-    "[auth] deleteAccount is wired in Phase 3 Step 3 via dataService — do not call directly",
-  );
 }
