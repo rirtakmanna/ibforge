@@ -4,6 +4,7 @@
   <p><em>An execution-enforced IB Analyst Training OS</em></p>
 
   [![License][license-shield]][license-url]
+  [![CI][ci-shield]][ci-url]
   [![Live Demo][demo-shield]][demo-url]
   [![Last Commit][commit-shield]][commit-url]
   [![React][react-shield]][react-url]
@@ -179,8 +180,8 @@ MIT — see [LICENSE][license-url]
 
 ### Author
 
-**[Rirtak Manna]**
-[LinkedIn](https://linkedin.com/in/ritak) · [GitHub](https://github.com/rirtakmanna)
+**Rirtak Manna**
+[LinkedIn](https://linkedin.com/in/rirtak) · [GitHub](https://github.com/rirtakmanna)
 
 [![GitHub Stats](https://github-readme-stats.vercel.app/api?username=rirtakmanna&show_icons=true&theme=dark&hide_border=true&title_color=0FA3E0&text_color=ffffff&bg_color=0a0a0f)](https://github.com/rirtakmanna)
 
@@ -196,8 +197,10 @@ MIT — see [LICENSE][license-url]
 
 [license-shield]: https://img.shields.io/github/license/rirtakmanna/atlas?style=flat-square
 [license-url]: ./LICENSE
+[ci-shield]: https://github.com/rirtakmanna/atlas/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/rirtakmanna/atlas/actions/workflows/ci.yml
 [demo-shield]: https://img.shields.io/badge/live-demo-success?style=flat-square
-[demo-url]: [NETLIFY_URL_ADDED_PHASE_4]
+[demo-url]: https://atlas-rirtak.netlify.app
 [commit-shield]: https://img.shields.io/github/last-commit/rirtakmanna/atlas?style=flat-square
 [commit-url]: https://github.com/rirtakmanna/atlas/commits
 [react-shield]: https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react
