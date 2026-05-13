@@ -179,7 +179,75 @@ function parseBatchResponse(rawText, expectedCount) {
   return enhanced;
 }
 
-// ─── Main export ────────────────────────────────────────────────────────────
+// ─── Single-post prompt builder ─────────────────────────────────────────────
+//
+// Used by generateSinglePost — regenerates ONE post in isolation.
+// Same brand voice rules as the batch builder. The output is the rewritten
+// post body directly — no delimiter markers needed since we expect exactly
+// one post back.
+
+function buildSinglePrompt({
+  seedContent,
+  companyName,
+  stepTitle,
+  qualityBar,
+  postType,
+}) {
+  return `You are rewriting a single LinkedIn post for an aspiring investment banking analyst's portfolio.
+
+CONTEXT:
+- Company: ${companyName}
+- Step: ${stepTitle}
+- Post type: ${postType || "Post"}
+- Quality bar: ${qualityBar || "Senior analyst quality. Specific, grounded, no fluff."}
+
+BRAND VOICE (mandatory):
+- Senior-analyst tone. Confident, specific, evidence-based.
+- No marketing language. No excessive emoji (one leading marker is fine).
+- No filler phrases ("Excited to share", "Honored to", "Humbled by").
+- Short paragraphs. Line breaks for rhythm. Concrete numbers > vague claims.
+- Hashtags at the end only. 3-5 max. Industry-relevant (#InvestmentBanking #EquityResearch etc.)
+- Length: 800-1500 characters.
+
+YOUR TASK:
+Below is a draft LinkedIn post. Rewrite it so it lands as a polished, grounded post that a hiring IB analyst would respect. Keep the original intent and any specific facts. Improve structure, sharpen claims, add 3-5 hashtags at the end.
+
+OUTPUT FORMAT (mandatory):
+- Output the rewritten post body ONLY.
+- No preamble. No commentary. No markdown code fences. No "Here is the rewritten post:".
+- Do NOT add a "===POST===" marker or any other wrapper.
+
+DRAFT POST:
+
+${seedContent.trim()}
+
+Now output the rewritten post body. Begin immediately with the post content.`;
+}
+
+// ─── Single-post response cleaner ───────────────────────────────────────────
+//
+// Strips any markdown code fence the model may add despite instructions.
+// Returns the cleaned text, or null if the result is empty after cleaning.
+
+function cleanSingleResponse(rawText) {
+  if (typeof rawText !== "string") return null;
+  let text = rawText.trim();
+  if (text.length === 0) return null;
+
+  // Strip opening fence (with or without language tag) and closing fence.
+  if (text.startsWith("```")) {
+    text = text.replace(/^```[a-zA-Z]*\s*\n?/, "").replace(/```\s*$/, "");
+    text = text.trim();
+  }
+
+  // Strip a stray "===POST 1===" header if the model leaked the batch
+  // format into the single-post response.
+  text = text.replace(/^===POST\s+\d+===\s*\n?/, "").trim();
+
+  return text.length > 0 ? text : null;
+}
+
+// ─── Main exports ───────────────────────────────────────────────────────────
 
 /**
  * Generates Gemini-enhanced versions of all posts for a step in a single call.
@@ -299,7 +367,129 @@ export async function generateBatchPosts({
     return { ok: false, useFallback: true, reason: "parse" };
   }
 
-  // ── Increment counter ONLY on full success (after-success increment) ──
+   // ── Increment counter ONLY on full success (after-success increment) ──
+  writeSessionCount(readSessionCount() + 1);
+
+  return { ok: true, enhanced };
+}
+
+/**
+ * Regenerates a SINGLE LinkedIn post via Gemini.
+ *
+ * Used by per-post regenerate (Block 5G) for surgical recovery or replacement
+ * of one enhanced post, independent of the page-level batch flow. One call
+ * costs ~200 output tokens vs ~600+ for a batch regenerate-to-recover-one.
+ *
+ * @param {object} args
+ * @param {string} args.seedContent
+ *   The post body to rewrite. The seed (roadmapData) content is the canonical
+ *   source — passing the existing enhancedContent as seed is also valid (for
+ *   "I don't like this Gemini output, try again" flows).
+ * @param {string} args.companyName
+ * @param {string} args.stepTitle
+ * @param {string} [args.qualityBar]
+ * @param {string} [args.postType]   e.g. "Thread" | "Model Drop" | "Pitch Post"
+ *
+ * @returns {Promise
+ *     { ok: true, enhanced: string }
+ *   | { ok: false, useFallback: true, reason: 'limit'|'bad-input'|'timeout'|'network'|'server'|'empty' }
+ * >}
+ *
+ * Side effects: increments sessionStorage atlas_gemini_call_count by 1 on
+ * full success (parse + non-empty result). Failed/timed-out calls do NOT
+ * count against the 30-call session budget.
+ *
+ * Note: this function does NOT have its own "parse" failure mode (unlike
+ * generateBatchPosts) because there are no delimiter markers — any non-empty
+ * string the model returns is treated as the rewritten post.
+ */
+export async function generateSinglePost({
+  seedContent,
+  companyName,
+  stepTitle,
+  qualityBar,
+  postType,
+} = {}) {
+  // ── Input validation ──
+  if (typeof seedContent !== "string" || seedContent.trim().length === 0) {
+    return { ok: false, useFallback: true, reason: "bad-input" };
+  }
+  if (typeof companyName !== "string" || companyName.length === 0) {
+    return { ok: false, useFallback: true, reason: "bad-input" };
+  }
+  if (typeof stepTitle !== "string" || stepTitle.length === 0) {
+    return { ok: false, useFallback: true, reason: "bad-input" };
+  }
+
+  // ── Session counter pre-check (BEFORE network) ──
+  if (readSessionCount() >= SESSION_CALL_LIMIT) {
+    return { ok: false, useFallback: true, reason: "limit" };
+  }
+
+  // ── Build prompt ──
+  const prompt = buildSinglePrompt({
+    seedContent,
+    companyName,
+    stepTitle,
+    qualityBar,
+    postType,
+  });
+
+  // ── Fire request with AbortController ──
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch(FUNCTION_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, type: "linkedin-post" }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err && err.name === "AbortError") {
+      return { ok: false, useFallback: true, reason: "timeout" };
+    }
+    console.error("[geminiClient] single network error:", err);
+    return { ok: false, useFallback: true, reason: "network" };
+  }
+
+  // ── Read response ──
+  let payload;
+  try {
+    payload = await response.json();
+  } catch (err) {
+    console.error("[geminiClient] single response parse failed:", err);
+    return { ok: false, useFallback: true, reason: "server" };
+  }
+
+  // Server fallback envelope.
+  if (payload && payload.fallback === true) {
+    return {
+      ok: false,
+      useFallback: true,
+      reason: payload.error === "timeout" ? "timeout" : "server",
+    };
+  }
+
+  if (!payload || typeof payload.result !== "string") {
+    return { ok: false, useFallback: true, reason: "empty" };
+  }
+
+  // ── Clean response ──
+  const enhanced = cleanSingleResponse(payload.result);
+  if (!enhanced) {
+    console.error(
+      "[geminiClient] single empty after cleaning, raw response:",
+      payload.result.slice(0, 400),
+    );
+    return { ok: false, useFallback: true, reason: "empty" };
+  }
+
+  // ── Increment counter ONLY on full success ──
   writeSessionCount(readSessionCount() + 1);
 
   return { ok: true, enhanced };

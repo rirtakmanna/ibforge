@@ -79,6 +79,54 @@
   margin: var(--space-lg) 0 var(--space-xl) 0;
 }
 
+/* ─── Batch generation (Block 5C.4) ───────────────────────────────────── */
+
+/* Container holding the page-level "GENERATE ALL POSTS WITH AI ↗" button
+ * and its transient inline message slot. Sits inside .lip__header below
+ * the subtitle and above the divider. */
+.lip__batch-row {
+  margin-top: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+/* The batch button inherits all visual styling from .lip__action +
+ * .lip__action--primary. The override here is purely layout: don't let
+ * it stretch in the column flex parent (default behaviour for buttons
+ * in a column flex layout depends on browser). */
+.lip__batch-btn {
+  width: max-content;
+  max-width: 100%;
+}
+
+/* Transient inline message under the batch button. Auto-cleared in 4s
+ * by setTransientMsg(). Replaces the not-yet-built Toast component;
+ * §Toast Notification System will eventually subsume this. */
+.lip__batch-msg {
+  font: var(--text-caption);
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-wide);
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background-color: transparent;
+  max-width: 100%;
+}
+
+.lip__batch-msg--info {
+  color: var(--color-text-secondary);
+}
+
+.lip__batch-msg--success {
+  color: var(--color-success-green);
+}
+
+.lip__batch-msg--error {
+  color: var(--color-error-red);
+}
+
 /* ─── Empty state ─────────────────────────────────────────────────────── */
 
 .lip__empty {
@@ -166,6 +214,17 @@
 
 .lip__chip--overdue {
   color: var(--color-warning-amber);
+}
+
+/* Enhancement chips (Block 5C.4.4): track which content path produced the
+ * body on screen. "Enhanced with AI" = Gemini-generated; "Offline Template"
+ * = seed content from roadmapData. Inherit .lip__chip base styles. */
+.lip__chip--enhanced {
+  color: var(--color-electric-blue);
+}
+
+.lip__chip--offline {
+  color: var(--color-text-secondary);
 }
 
 .lip__schedule-line {

@@ -27,9 +27,9 @@
 //
 // Phase 2A renders entry.content verbatim (no Gemini enhancement) — that swap is Phase 3.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { roadmapData } from "@/data/roadmapData";
 import { companiesData } from "@/data/companiesData";
@@ -38,7 +38,12 @@ import {
   getNextStep,
   getScheduledLinkedInPosts,
   setLinkedInPostStatus,
+  saveEnhancedPosts,
 } from "@/utils/dataService";
+import {
+  generateBatchPosts,
+  isSessionLimitReached,
+} from "@/utils/geminiClient";
 
 import "./LinkedInPosts.css";
 
@@ -123,22 +128,39 @@ function PostCard({ post, total, filesToUpload, onStatusChange }) {
   const [copied, setCopied] = useState(false);
   const [toggling, setToggling] = useState(false);
 
+  // Per Override 6: type badge and title both derive from the SEED (post.content).
+  // The header acts as the stable identity for the post; the body is the
+  // deliverable. Only the body swaps between seed and enhanced content.
   const postType = derivePostType(post.content);
   const title = derivePostTitle(post.content);
   const dateLabel = formatScheduledDate(post.scheduledFor);
   const effectiveStatus = getEffectiveStatus(post);
 
+  // ─── Enhanced-vs-seed body resolution (Block 5C.4.4) ───
+  // Non-empty string in enhancedContent → render that, mark "Enhanced with AI".
+  // Otherwise → render seed content, mark "Offline Template".
+  const hasEnhanced =
+    typeof post.enhancedContent === "string" && post.enhancedContent.length > 0;
+  const bodyToRender = hasEnhanced ? post.enhancedContent : post.content;
+  const enhancementChipLabel = hasEnhanced ? "Enhanced with AI" : "Offline Template";
+  const enhancementChipClass = hasEnhanced
+    ? "lip__chip lip__chip--enhanced"
+    : "lip__chip lip__chip--offline";
+
   const handlePostOnLinkedIn = async () => {
     // Open new tab first (must happen inside the click handler to avoid
     // popup blockers). Clipboard write follows; if it fails, the tab is
     // still open and the operator can paste from their own buffer.
+    //
+    // Copy whichever body we're showing — if Gemini enhanced it, the
+    // operator wants the enhanced version on the clipboard, not the seed.
     window.open(
       "https://www.linkedin.com/post/new",
       "_blank",
       "noopener,noreferrer",
     );
     try {
-      await navigator.clipboard.writeText(post.content);
+      await navigator.clipboard.writeText(bodyToRender);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -178,6 +200,7 @@ function PostCard({ post, total, filesToUpload, onStatusChange }) {
           </span>
           <span className="lip__type-badge">{postType}</span>
           <span className={statusChipClass}>{effectiveStatus}</span>
+          <span className={enhancementChipClass}>{enhancementChipLabel}</span>
         </div>
         <div className="lip__schedule-line">
           Day {post.day} · {dateLabel}
@@ -187,7 +210,7 @@ function PostCard({ post, total, filesToUpload, onStatusChange }) {
 
       <section className="lip__body-section">
         <div className="lip__section-label">POST BODY</div>
-        <pre className="lip__body">{post.content}</pre>
+        <pre className="lip__body">{bodyToRender}</pre>
       </section>
 
       <section className="lip__files-section">
@@ -237,6 +260,28 @@ function LinkedInPosts() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // ─── Batch generation state (Block 5C.4) ───
+  // isGenerating: in-flight lock — disables button while request is pending.
+  // cooldown:     2-second post-resolve lock — prevents rapid re-fire after
+  //               success OR fallback OR timeout (per §Gemini Rate Control).
+  // batchMsg:     transient inline message under the button — replaces the
+  //               not-yet-built Toast system. Auto-clears in 4s.
+  // batchMsgRef:  setTimeout id; cleared on unmount or when a new message arrives.
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
+  const [batchMsg, setBatchMsg] = useState(null); // { text, tone: "info"|"success"|"error" } | null
+  const batchMsgTimerRef = useRef(null);
+
+  // Always clear the timer if the component unmounts mid-message.
+  useEffect(() => {
+    return () => {
+      if (batchMsgTimerRef.current) {
+        window.clearTimeout(batchMsgTimerRef.current);
+        batchMsgTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const step = useMemo(() => roadmapData.find((s) => s.id === id), [id]);
   const status = useMemo(
@@ -311,6 +356,122 @@ function LinkedInPosts() {
 
   const handleStatusChange = () => setRefreshKey((n) => n + 1);
 
+  // ─── Batch generation: computed disabled flags ──────────────────────────
+  // Per Override 4 (Generate-once gate, UI layer): the button must be
+  // disabled when ANY post in this step already has enhancedContent.
+  // Override 4 also requires that the data layer (saveEnhancedPosts) refuses
+  // overwrite and that scheduleLinkedInPosts preserves enhancedContent —
+  // both verified in Chat 4. This is the third (UI) layer.
+  const alreadyEnhanced = persistedPosts.some(
+    (p) =>
+      typeof p.enhancedContent === "string" && p.enhancedContent.length > 0,
+  );
+  const sessionLimitHit = isSessionLimitReached();
+  const buttonDisabled =
+    isGenerating || cooldown || alreadyEnhanced || sessionLimitHit;
+
+  // Reason-specific label — see §Gemini Rate Control + handoff "Disabled state copy".
+  let buttonLabel;
+  if (isGenerating) buttonLabel = "GENERATING…";
+  else if (cooldown) buttonLabel = "COOLDOWN…";
+  else if (alreadyEnhanced) buttonLabel = "ALL POSTS ALREADY ENHANCED";
+  else if (sessionLimitHit) buttonLabel = "GENERATION LIMIT REACHED";
+  else buttonLabel = "GENERATE ALL POSTS WITH AI ↗";
+
+  // ─── Inline message helper (replaces not-yet-built Toast system) ────────
+  // Sets a transient message that auto-clears after 4 seconds. Calling again
+  // resets the timer cleanly.
+  const setTransientMsg = (text, tone) => {
+    if (batchMsgTimerRef.current) {
+      window.clearTimeout(batchMsgTimerRef.current);
+      batchMsgTimerRef.current = null;
+    }
+    setBatchMsg({ text, tone });
+    batchMsgTimerRef.current = window.setTimeout(() => {
+      setBatchMsg(null);
+      batchMsgTimerRef.current = null;
+    }, 4000);
+  };
+
+  // ─── Batch generation handler ───────────────────────────────────────────
+  const handleBatchGenerate = async () => {
+    // Defensive guard — UI should already prevent this, but be explicit.
+    if (buttonDisabled) return;
+    if (persistedPosts.length === 0) return;
+
+    // Build the seed payload in the SAME order saveEnhancedPosts expects.
+    // saveEnhancedPosts (Block 5C.3.1) resolves indices by sorting the step's
+    // cached posts (day asc, id-suffix asc). Our persistedPosts array comes
+    // straight out of getScheduledLinkedInPosts which is already sorted that
+    // way upstream — so the persistedPosts order IS the canonical order, and
+    // index = position in this array. (See "SCHEMA NOTE" in CHAT_HANDOFF.)
+    const seedPosts = persistedPosts.map((p) => ({
+      day: p.day,
+      content: p.content,
+    }));
+
+    const company =
+      step.companyId && companiesData.find((c) => c.id === step.companyId);
+    const companyName = company ? company.name : step.title;
+    const qualityBar =
+      (step.build && step.build.qualityBar) ||
+      (step.apply && step.apply.focusDo) ||
+      "";
+
+    setIsGenerating(true);
+    try {
+      const outcome = await generateBatchPosts({
+        seedPosts,
+        companyName,
+        stepTitle: step.title,
+        qualityBar,
+      });
+
+      if (outcome && outcome.ok && Array.isArray(outcome.enhanced)) {
+        // saveEnhancedPosts performs atomic per-post write with overwrite
+        // refusal. Returns { ok, saved, skipped }.
+        const writeResult = await saveEnhancedPosts(step.id, outcome.enhanced);
+        if (writeResult && writeResult.ok && writeResult.saved > 0) {
+          setTransientMsg(
+            writeResult.skipped > 0
+              ? `Enhanced ${writeResult.saved} post${writeResult.saved === 1 ? "" : "s"} (${writeResult.skipped} already enhanced — skipped).`
+              : `Enhanced ${writeResult.saved} post${writeResult.saved === 1 ? "" : "s"} with AI.`,
+            "success",
+          );
+        } else {
+          // Save returned no saves — either all skipped or unexpected shape.
+          setTransientMsg(
+            "Posts were already enhanced — nothing to update.",
+            "info",
+          );
+        }
+        // Bump refreshKey so persistedPosts re-reads the cache with the new
+        // enhancedContent populated. Cards remount with the new values.
+        setRefreshKey((n) => n + 1);
+      } else {
+        // Fallback path: timeout, network, bad batch, etc.
+        const reason =
+          outcome && outcome.reason ? String(outcome.reason) : "unknown";
+        setTransientMsg(
+          `Generation unavailable — using seed posts (${reason}).`,
+          "info",
+        );
+      }
+    } catch (err) {
+      // Defensive — generateBatchPosts and saveEnhancedPosts both return
+      // structured outcomes rather than throwing. Catch is a last-resort net.
+      console.error("[LinkedInPosts] handleBatchGenerate failed:", err);
+      setTransientMsg("Generation failed — please try again.", "error");
+    } finally {
+      // ALWAYS clear in-flight, ALWAYS enter cooldown — even on fallback or
+      // throw. Per §Gemini Rate Control: cooldown applies after success OR
+      // fallback OR timeout.
+      setIsGenerating(false);
+      setCooldown(true);
+      window.setTimeout(() => setCooldown(false), 2000);
+    }
+  };
+
   return (
     <motion.div
       className="lip"
@@ -329,6 +490,38 @@ function LinkedInPosts() {
           Scheduled {persistedPosts.length}{" "}
           {persistedPosts.length === 1 ? "post" : "posts"}
         </p>
+
+        {persistedPosts.length > 0 && (
+          <div className="lip__batch-row">
+            <button
+              type="button"
+              className="lip__action lip__action--primary lip__batch-btn"
+              onClick={handleBatchGenerate}
+              disabled={buttonDisabled}
+              aria-busy={isGenerating}
+              aria-disabled={buttonDisabled}
+            >
+              {buttonLabel}
+            </button>
+
+            <AnimatePresence>
+              {batchMsg && (
+                <motion.div
+                  key={batchMsg.text}
+                  className={`lip__batch-msg lip__batch-msg--${batchMsg.tone}`}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15, ease: [0, 0, 0.2, 1] }}
+                  role={batchMsg.tone === "error" ? "alert" : "status"}
+                  aria-live={batchMsg.tone === "error" ? "assertive" : "polite"}
+                >
+                  {batchMsg.text}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
       </header>
 
       <hr className="lip__divider" />
