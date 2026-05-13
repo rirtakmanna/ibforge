@@ -53,7 +53,7 @@ function DeliverableUpload({ stepId, acceptedFileTypes, onUploaded }) {
   }, []);
 
   const processFile = useCallback(
-    (file) => {
+    async (file) => {
       if (!file) return;
 
       const ext = getExtension(file.name);
@@ -71,51 +71,31 @@ function DeliverableUpload({ stepId, acceptedFileTypes, onUploaded }) {
 
       setPhase("uploading");
 
-      // Phase 2A: synchronous save. Wrap in a short timer to surface the
-      // uploading state visually — Phase 3 will replace this with a real
-      // promise from Firebase Storage and the timer goes away.
-      window.setTimeout(() => {
-        let url;
-        try {
-          url = URL.createObjectURL(file);
-        } catch (err) {
-          console.error("[DeliverableUpload] createObjectURL failed:", err);
-          showRejection(file.name, "Could not create file preview");
-          return;
-        }
+      // Phase 3: saveDeliverable owns the Firebase Storage upload and returns
+      // a real download URL. Pass the raw File instance (Phase 3 signature).
+      // No blob URL, no synthetic timer — the network round-trip surfaces
+      // the uploading state for as long as the upload actually takes.
+      let result;
+      try {
+        result = await saveDeliverable(stepId, file);
+      } catch (err) {
+        console.error("[DeliverableUpload] saveDeliverable threw:", err);
+        showRejection(file.name, "Save failed");
+        return;
+      }
 
-        let result;
-        try {
-          result = saveDeliverable(stepId, {
-            fileName: file.name,
-            size: file.size,
-            url,
-          });
-        } catch (err) {
-          console.error("[DeliverableUpload] saveDeliverable threw:", err);
-          showRejection(file.name, "Save failed");
-          return;
-        }
+      if (result && result.skipped) {
+        showRejection(file.name, "Already uploaded for this step");
+        return;
+      }
 
-        if (result && result.skipped) {
-          // Revoke the blob we just made — we're not keeping it.
-          try {
-            URL.revokeObjectURL(url);
-          } catch {
-            /* noop */
-          }
-          showRejection(file.name, "Already uploaded for this step");
-          return;
-        }
-
-        setFeedback({ fileName: file.name, message: "" });
-        setPhase("success");
-        if (typeof onUploaded === "function") {
-          onUploaded(result.deliverable);
-        }
-        // Success stays visible until the next interaction or until the
-        // list re-renders. Brand spec doesn't auto-dismiss success.
-      }, UPLOADING_DURATION_MS);
+      setFeedback({ fileName: file.name, message: "" });
+      setPhase("success");
+      if (typeof onUploaded === "function") {
+        onUploaded(result.deliverable);
+      }
+      // Success stays visible until the next interaction or until the
+      // list re-renders. Brand spec doesn't auto-dismiss success.
     },
     [acceptedFileTypes, onUploaded, showRejection, stepId],
   );
