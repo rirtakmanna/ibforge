@@ -934,6 +934,94 @@ export async function saveEnhancedPosts(stepId, enhancedArray) {
 }
 
 /**
+ * Writes Gemini-enhanced content to a SINGLE scheduled-post doc by its id.
+ * Used by per-post regenerate (Block 5G) — the surgical complement to the
+ * batch saveEnhancedPosts above.
+ *
+ * Signature: saveEnhancedPostForId(postId, enhancedContent)
+ *
+ * ── Asymmetry with saveEnhancedPosts (binding DESIGN DECISIONS entry) ──
+ *   saveEnhancedPosts  : refuses overwrite. Generate-once enforced at data
+ *                        layer. Returns { saved, skipped } so the batch UI
+ *                        can report partial fills.
+ *   saveEnhancedPostForId : OVERWRITES by design. The whole point of
+ *                        per-post regenerate is to replace existing content.
+ *                        Protected by UI two-step confirm (Block 5G.3),
+ *                        NOT by data-layer refusal.
+ *
+ *   Both functions are correct. They serve different flows. Do not "unify"
+ *   them — the asymmetry is the feature.
+ *
+ * ── Behaviour ──
+ *   - Locates the target post in cache.scheduledPosts by `id`. Throws if
+ *     the post is not found (the postId must belong to the current user).
+ *   - Writes the new enhancedContent + updatedAt timestamp via setDoc merge.
+ *     The post's immutable fields (stepId, day, content, scheduledFor) and
+ *     mutable status fields (status, postedAt) are untouched.
+ *   - Optimistic cache update — snapshot listener will overwrite with
+ *     server-authoritative state on its next callback.
+ *
+ * Returns: { ok: true, post: <updated post record> }
+ *
+ * Throws on:
+ *   - no signed-in user
+ *   - invalid postId (non-string or empty)
+ *   - invalid enhancedContent (non-string or empty)
+ *   - postId not found in cache.scheduledPosts
+ */
+export async function saveEnhancedPostForId(postId, enhancedContent) {
+  if (typeof postId !== "string" || postId.length === 0) {
+    throw new Error(
+      "[dataService] saveEnhancedPostForId requires postId string",
+    );
+  }
+  if (
+    typeof enhancedContent !== "string" ||
+    enhancedContent.length === 0
+  ) {
+    throw new Error(
+      "[dataService] saveEnhancedPostForId requires non-empty enhancedContent string",
+    );
+  }
+
+  const uid = cache.currentUserId;
+  if (!uid) {
+    throw new Error(
+      "[dataService] saveEnhancedPostForId requires signed-in user",
+    );
+  }
+
+  // Locate the post in the cache. We need the existing record both to
+  // verify the id is real for this user AND to return the updated record
+  // so the caller can echo it into local UI state without waiting for
+  // the snapshot listener.
+  const all = getScheduledLinkedInPosts();
+  const index = all.findIndex((p) => p.id === postId);
+  if (index === -1) {
+    throw new Error(
+      `[dataService] saveEnhancedPostForId: post not found: ${postId}`,
+    );
+  }
+  const current = all[index];
+
+  // Write only the new field — merge preserves everything else.
+  const postDocRef = doc(db, "users", uid, "scheduledPosts", postId);
+  await setDoc(
+    postDocRef,
+    { enhancedContent, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+
+  const updated = { ...current, enhancedContent };
+
+  // Optimistic cache update — snapshot listener overwrites on next callback.
+  const next = [...all.slice(0, index), updated, ...all.slice(index + 1)];
+  cache.scheduledPosts = next;
+
+  return { ok: true, post: updated };
+}
+
+/**
  * Validates stepId. Validates posts is an array of { day, content }.
  * scheduledFor = completionDate + day offset.
  *
@@ -1074,6 +1162,7 @@ if (typeof window !== "undefined" && !import.meta.env.PROD) {
     scheduleLinkedInPosts,
     setLinkedInPostStatus,
     saveEnhancedPosts,
+    saveEnhancedPostForId,
     // Schema version
     getSchemaVersion,
     setSchemaVersion,
