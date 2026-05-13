@@ -795,7 +795,145 @@ export async function setLinkedInPostStatus(postId, status) {
 }
 
 /**
- * Schedules LinkedIn posts for a step. Called on company-step Mark Complete.
+ * Writes Gemini-enhanced content to the matching scheduled-post docs for a step.
+ * Called once per step after a successful generateBatchPosts() call.
+ *
+ * Signature: saveEnhancedPosts(stepId, enhancedArray)
+ *   where enhancedArray = [{ index: number, content: string }, ...]
+ *   matching the return shape of generateBatchPosts() in geminiClient.js.
+ *
+ * Index resolution:
+ *   The `index` field refers to position in the step's posts sorted by
+ *   (day asc, id-suffix asc) — the same canonical order used by
+ *   scheduleLinkedInPosts when assigning deterministic ids. This ensures
+ *   `index` round-trips identically between the consumer (LinkedInPosts.jsx),
+ *   the batch generator (geminiClient.js), and this writer.
+ *
+ * Generate-once enforcement (Override 4, layer 2 of 3):
+ *   If a target post already has a non-empty `enhancedContent` string, that
+ *   post is SKIPPED (not added to the batch). The remaining eligible posts
+ *   are still written. Returns a per-call summary so the UI can react.
+ *
+ * Atomicity:
+ *   All eligible writes are committed in a single writeBatch — they succeed
+ *   or fail together. Skipped (already-enhanced) posts do not participate
+ *   in the batch and do not affect its outcome.
+ *
+ * Returns: { ok: true, saved: number, skipped: number }
+ *   - saved:   count of posts whose enhancedContent was written this call
+ *   - skipped: count of posts that already had enhancedContent (refusal)
+ *
+ * Throws on:
+ *   - no signed-in user
+ *   - invalid stepId
+ *   - enhancedArray not an array, or entries missing { index:number, content:string }
+ *   - enhancedArray entry whose `index` does not map to a post in this step
+ *
+ * Snapshot listener echoes the new enhancedContent into cache.scheduledPosts.
+ */
+export async function saveEnhancedPosts(stepId, enhancedArray) {
+  assertValidStepId(stepId);
+
+  if (!Array.isArray(enhancedArray)) {
+    throw new Error(
+      "[dataService] saveEnhancedPosts requires enhancedArray (Array)",
+    );
+  }
+
+  const uid = cache.currentUserId;
+  if (!uid) {
+    throw new Error("[dataService] saveEnhancedPosts requires signed-in user");
+  }
+
+  // Validate every entry up front so a malformed item doesn't trigger a
+  // partial write.
+  for (const entry of enhancedArray) {
+    if (
+      !entry ||
+      typeof entry.index !== "number" ||
+      !Number.isInteger(entry.index) ||
+      entry.index < 0 ||
+      typeof entry.content !== "string" ||
+      entry.content.length === 0
+    ) {
+      throw new Error(
+        "[dataService] saveEnhancedPosts entries must be { index:number, content:string }",
+      );
+    }
+  }
+
+  // Canonical sort: by day asc, then by the trailing -{index} numeric suffix
+  // of the deterministic id ascending. This matches the order the batch
+  // generator and the LinkedInPosts page use.
+  const stepPosts = getScheduledLinkedInPosts()
+    .filter((p) => p.stepId === stepId)
+    .sort((a, b) => {
+      if (a.day !== b.day) return a.day - b.day;
+      const aIdx = Number(a.id.split("-").pop());
+      const bIdx = Number(b.id.split("-").pop());
+      return aIdx - bIdx;
+    });
+
+  if (stepPosts.length === 0) {
+    throw new Error(
+      `[dataService] saveEnhancedPosts: no scheduled posts for stepId "${stepId}"`,
+    );
+  }
+
+  // Resolve indices to post docs. Refuse the whole call if any index is OOB.
+  const resolved = enhancedArray.map((entry) => {
+    if (entry.index >= stepPosts.length) {
+      throw new Error(
+        `[dataService] saveEnhancedPosts: index ${entry.index} out of range ` +
+          `(step "${stepId}" has ${stepPosts.length} posts)`,
+      );
+    }
+    return { post: stepPosts[entry.index], content: entry.content };
+  });
+
+  // Partition into eligible (no existing enhancedContent) vs skipped (already set).
+  const eligible = [];
+  let skipped = 0;
+  for (const { post, content } of resolved) {
+    if (
+      typeof post.enhancedContent === "string" &&
+      post.enhancedContent.length > 0
+    ) {
+      skipped += 1;
+      continue;
+    }
+    eligible.push({ post, content });
+  }
+
+  if (eligible.length === 0) {
+    return { ok: true, saved: 0, skipped };
+  }
+
+  // Atomic batch write — merge only the new field, leave everything else intact.
+  const batch = writeBatch(db);
+  for (const { post, content } of eligible) {
+    const postDocRef = doc(db, "users", uid, "scheduledPosts", post.id);
+    batch.set(
+      postDocRef,
+      { enhancedContent: content, updatedAt: serverTimestamp() },
+      { merge: true },
+    );
+  }
+  await batch.commit();
+
+  // Optimistic cache update — snapshot listener will overwrite with
+  // server-authoritative state on its next callback.
+  const eligibleIds = new Set(eligible.map(({ post }) => post.id));
+  cache.scheduledPosts = cache.scheduledPosts.map((p) => {
+    if (!eligibleIds.has(p.id)) return p;
+    const match = eligible.find(({ post }) => post.id === p.id);
+    return { ...p, enhancedContent: match.content };
+  });
+
+  return { ok: true, saved: eligible.length, skipped };
+}
+
+/**
  * Validates stepId. Validates posts is an array of { day, content }.
  * scheduledFor = completionDate + day offset.
  *
@@ -853,10 +991,29 @@ export async function scheduleLinkedInPosts(stepId, posts, completionDate) {
 
     const id = `${stepId}-day${p.day}-${index}`;
     const prior = existingById.get(id);
+    // Preserve `status` + `postedAt` (the original re-completion safety) AND
+    // `enhancedContent` (Override 4 layer 3 — re-completion must never silently
+    // wipe a Gemini-enhanced post). `enhancedContent` is null until the operator
+    // runs the page-level batch generation; falsy `prior.enhancedContent` falls
+    // through to null, which is the correct default for a freshly-scheduled post.
+    const preservedEnhanced =
+      prior &&
+      typeof prior.enhancedContent === "string" &&
+      prior.enhancedContent.length > 0
+        ? prior.enhancedContent
+        : null;
     const preserved =
       prior && prior.status === "Posted"
-        ? { status: "Posted", postedAt: prior.postedAt }
-        : { status: "Scheduled", postedAt: null };
+        ? {
+            status: "Posted",
+            postedAt: prior.postedAt,
+            enhancedContent: preservedEnhanced,
+          }
+        : {
+            status: "Scheduled",
+            postedAt: null,
+            enhancedContent: preservedEnhanced,
+          };
 
     return {
       id,
@@ -916,6 +1073,7 @@ if (typeof window !== "undefined" && !import.meta.env.PROD) {
     getScheduledLinkedInPosts,
     scheduleLinkedInPosts,
     setLinkedInPostStatus,
+    saveEnhancedPosts,
     // Schema version
     getSchemaVersion,
     setSchemaVersion,
