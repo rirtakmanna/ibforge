@@ -37,6 +37,17 @@ const GENERATION_CONFIG = {
     maxOutputTokens: 600,
     topP: 0.95,
   },
+  // Batch enhancement of all scheduled LinkedIn posts for one step in a
+  // single Gemini call. Larger token budget to fit N posts (~200-400 tokens
+  // each) plus delimiter markers. Used by src/utils/geminiClient.js with
+  // type "linkedin-batch". Higher temperature than company-generator —
+  // post writing benefits from creative variance; deterministic
+  // instruction-filling would produce wooden output.
+  "linkedin-batch": {
+    temperature: 0.7,
+    maxOutputTokens: 2400,
+    topP: 0.95,
+  },
 };
 
 // ─── Fallback envelope ──────────────────────────────────────────────────────
