@@ -139,7 +139,7 @@ function StepDetail() {
     setRefreshKey((n) => n + 1);
   };
 
-  const handleMarkComplete = () => {
+  const handleMarkComplete = async () => {
     if (marking) return;
     setFeedback(null);
 
@@ -161,9 +161,13 @@ function StepDetail() {
 
     setMarking(true);
     try {
-      markStepComplete(step.id);
+      // Await the Firestore write. markStepComplete updates the in-memory
+      // cache (optimistic) immediately after the setDoc resolves, so the
+      // refreshKey bump below will re-derive status as "complete".
+      await markStepComplete(step.id);
 
-      // Company-step: also schedule LinkedIn posts.
+      // Company-step: also schedule LinkedIn posts. Await so any error is
+      // caught here, but don't fail the mark-complete on a scheduling error.
       if (
         step.type === "company-step" &&
         step.apply &&
@@ -171,7 +175,7 @@ function StepDetail() {
         step.apply.linkedInSchedule.length > 0
       ) {
         try {
-          scheduleLinkedInPosts(
+          await scheduleLinkedInPosts(
             step.id,
             step.apply.linkedInSchedule,
             new Date(),
