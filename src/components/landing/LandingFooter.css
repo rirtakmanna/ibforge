@@ -1,0 +1,247 @@
+/* src/components/landing/LandingFooter.css
+ *
+ * Footer chassis styling — extracted from src/pages/Landing.css in
+ * Phase 4A Step 7A STEP 2 (Chat 7). Rules lifted verbatim; the
+ * cascade is identical to the inline version that lived in
+ * Landing.css through the end of Chat 6.
+ *
+ * USAGE: paired with src/components/landing/LandingFooter.jsx.
+ *        Also imported by the LegalPage chassis (Step 7B) so that
+ *        Privacy / Terms / Refund close with the same footer as
+ *        the landing page.
+ *
+ * BINDING DESIGN OVERRIDES carried into this file:
+ *
+ *   OVERRIDE 9 — FOOTER TAGLINE ITALIC (Chat 6, binding):
+ *   The .landing-footer-tagline rule below carries
+ *   `font-style: italic`. This is the SINGLE permitted use of
+ *   italic across the entire public surface (landing page + all
+ *   legal pages). Future edits to this file must NOT remove the
+ *   italic from the tagline (it is the deliberate quiet
+ *   distinction between the brand anchor and the surrounding
+ *   chrome). Future edits to OTHER selectors in this file must
+ *   NOT introduce italic anywhere else.
+ *
+ *   Reference: MY_PROGRESS.md DESIGN DECISIONS (Chat 6) +
+ *   ATLAS_Brand_System.md italic-use guideline.
+ *
+ * SECTION 10 — FOOTER (Chat 6)
+ * Single horizontal strip — three semantic regions in one row:
+ *   LEFT    logo + IBForge wordmark
+ *   CENTER  tagline "Work counts when it exists."
+ *   RIGHT   © 2026 IBForge — Built by Rirtak Manna
+ *
+ * Border-top carries the visual seam from the page section above.
+ * 32px vertical padding per kickoff. Mobile (<768px): all three
+ * regions stack vertically, centered, generous gap between rows.
+ * Logo SVG markup mirrors LandingNav exactly (lifted in
+ * LandingFooter.jsx); this CSS owns the layout and the 24×24
+ * footer-sized mark cluster.
+ *
+ * Brand tokens only — zero hex codes per Core Architecture Rules §3.
+ */
+
+.landing-footer {
+  width: 100%;
+  background: var(--color-bg-primary);
+  border-top: 1px solid var(--color-border);
+  /* 32px vertical per kickoff. Horizontal padding matches the rest of
+     the landing page sections for visual continuity (sections sit
+     inside max-width 1280px with --space-xl side padding). */
+  padding: var(--space-xl) var(--space-xl);
+}
+
+.landing-footer-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  /* Three-column grid — left and right columns size to content, center
+     column fills remaining space. align-items: center vertically aligns
+     all three regions on the same baseline regardless of internal text
+     height. */
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* ─── LEFT — brand cluster (logo + wordmark) ──────────────────────── */
+
+.landing-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  color: var(--color-text-primary);
+  /* Tight border on focus only — keeps the footer chrome quiet during
+     normal scroll. */
+  transition: color 150ms linear;
+}
+
+.landing-footer-brand:hover {
+  color: var(--color-electric-blue);
+}
+
+.landing-footer-brand:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 4px;
+}
+
+/* Mark container — holds the static square + rotor SVGs layered on
+   top of each other. Mirrors .landing-nav-mark rules from
+   LandingNav.css exactly (only width/height differ: 24×24 here vs
+   28×28 in the nav — quieter echo of the top brand).
+
+   inline-flex + centering: anchors the icon's optical center to the
+   wordmark's text baseline the same way the nav does. inline-block
+   leaves the icon top-aligned, which sits visibly off the wordmark.
+
+   color: var(--color-electric-blue): inherited by SVG `currentColor`
+   if/when used. Currently the SVG paints colors directly, but matching
+   the nav rule keeps future edits portable. */
+.landing-footer-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--color-electric-blue);
+}
+
+/* overflow: visible is REQUIRED per ATLAS_Brand_System.md §Icon Mark:
+   the rotating line protrudes past the 362×362 viewBox at the extremes
+   of its arc. Clipping it (the default for SVG) makes the rotor look
+   truncated / thinner at the corners compared to the nav. inset:0 is
+   the modern shorthand for top:0; right:0; bottom:0; left:0 — matches
+   the nav rule exactly. */
+.landing-footer-mark .landing-footer-logo-static,
+.landing-footer-mark .landing-footer-logo-rotor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.landing-footer-word {
+  /* IBForge wordmark — Space Grotesk Medium, sentence case, tighter
+     letter-spacing than body. Matches LandingNav.landing-nav-word
+     visual weight; sized down for footer chrome. */
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: var(--tracking-tight);
+  color: inherit;
+}
+
+/* ─── CENTER — tagline ────────────────────────────────────────────── */
+
+.landing-footer-tagline {
+  margin: 0;
+  text-align: center;
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+  /* Tagline is the visual anchor of the footer — slightly emphasized
+     via italic, which is a single-use deviation here (no other
+     italic on the page). Quietly distinguishes it from the
+     copyright row's flat tone.
+     OVERRIDE 9 (Chat 6, binding): this is the SINGLE permitted use
+     of italic across the entire public surface. Do not remove. */
+  font-style: italic;
+}
+
+/* ─── RIGHT — copyright + author credit ───────────────────────────── */
+
+.landing-footer-copyright {
+  margin: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  /* JetBrains Mono caption — terminal-grade copyright marker. Tighter
+     letter-spacing than the body, slightly muted color so it doesn't
+     compete with the tagline center. */
+  font: var(--text-data);
+  font-size: 13px;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-secondary);
+  /* No-wrap on each individual span; the row itself can wrap if needed
+     at very narrow desktop widths (1024–1100px range). */
+  white-space: nowrap;
+}
+
+.landing-footer-copyright-year,
+.landing-footer-copyright-author {
+  /* Each span is its own no-wrap unit — the divider sits between them
+     and can fold to the next line if the container gets squeezed. */
+  white-space: nowrap;
+}
+
+.landing-footer-copyright-divider {
+  color: var(--color-text-disabled);
+}
+
+/* ─── Mobile (<768px) — stack regions vertically ──────────────────── */
+
+@media (max-width: 767px) {
+  .landing-footer {
+    padding: var(--space-xl) var(--space-md);
+  }
+
+  .landing-footer-inner {
+    /* Collapse the three-column grid to a single centered stack.
+       Logo cluster → tagline → copyright. Generous gap between rows
+       so the footer reads as deliberate spacing, not collapsed chrome. */
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: var(--space-md);
+    text-align: center;
+  }
+
+  .landing-footer-brand {
+    /* Keep the inline-flex layout (logo + wordmark on one row) even
+       when stacked — only the regions stack, not the brand internals. */
+    align-self: center;
+  }
+
+  .landing-footer-tagline {
+    /* Tagline already centered via text-align — no extra rule needed,
+       but documenting the intent so future edits don't try to add
+       text-align: left here. */
+    max-width: 100%;
+  }
+
+  .landing-footer-copyright {
+    /* Allow the year ↔ author to wrap on narrow widths (<375px ish).
+       The divider em-dash will fold with the author span. */
+    flex-wrap: wrap;
+    justify-content: center;
+    white-space: normal;
+  }
+
+  .landing-footer-copyright-year,
+  .landing-footer-copyright-author {
+    /* Re-enable no-wrap on the individual spans so "© 2026 IBForge"
+       stays together and "Built by Rirtak Manna" stays together. */
+    white-space: nowrap;
+  }
+}
+
+/* ─── Reduced-motion respect ──────────────────────────────────────────
+   SMIL <animateTransform> cannot be stopped via animation-duration: 0s.
+   Pause via animation-play-state AND hide the rotor SVG entirely so the
+   static line angle from the last render doesn't freeze visibly in
+   place. Mirrors the LandingNav.css block exactly (selector swap only).
+   Per Core Architecture Rule 4(c), SMIL is the one permitted exception
+   to "Framer Motion for all animations" and must respect
+   prefers-reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-footer-mark .landing-footer-logo-rotor animateTransform {
+    animation-play-state: paused;
+  }
+  .landing-footer-mark .landing-footer-logo-rotor {
+    display: none;
+  }
+}

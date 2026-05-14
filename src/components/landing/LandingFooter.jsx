@@ -56,7 +56,7 @@ function LandingFooter() {
       variants={variants}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: "-10% 0px" }}
+      viewport={{ once: true, amount: 0.01 }}
     >
       <div className="landing-footer-inner">
         {/* LEFT — logo + wordmark, internal link to landing top.
