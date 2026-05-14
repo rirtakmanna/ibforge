@@ -1339,7 +1339,7 @@ function Landing() {
                     ₹2,499
                   </span>
                   <span className="landing-pricing-card-price landing-pricing-card-price--accent">
-                    ₹1,699
+                    ₹1,999
                   </span>
                 </p>
                 <p className="landing-pricing-card-founder-tag">
@@ -1381,8 +1381,8 @@ function Landing() {
                   of subscription to cover all referenced courses.
                 </p>
                 <p className="landing-pricing-honesty-math">
-                  Total cost to you: ₹1,699 (IBForge) + around ₹1,400
-                  (Udemy 2 months) ≈ ₹3,100.
+                  Total cost to you: ₹1,999 (IBForge) + around ₹1,400
+                  (Udemy 2 months) ≈ ₹3,400.
                 </p>
               </motion.aside>
 
@@ -1391,19 +1391,40 @@ function Landing() {
                 className="landing-pricing-cta landing-pricing-cta--full"
                 onClick={handleUpiPay}
               >
-                Pay ₹1,699 via UPI →
+                Pay ₹1,999 via UPI →
               </button>
             </motion.article>
           </motion.div>
+
+          {/* ───────────────────────────────────────────────────────────
+              SECTION 8 — Refund inline note (embedded inside Section 7
+              per kickoff: "inside pricing section, below both cards").
+              Inherits Section 7's whileInView reveal — no own variant.
+              Plain paragraph, secondary text tone, generous max-width
+              for readability. The 7-day window is the calming closing
+              beat of the pricing section before Trust and Footer.
+          ─────────────────────────────────────────────────────────── */}
+          <div className="landing-pricing-refund" role="note" aria-label="Refund policy summary">
+            <p className="landing-pricing-refund-body">
+              Refund policy: full refund within 7 days, no questions
+              asked, to the same UPI ID you paid from. After 7 days,
+              no refunds — by then you have seen enough of the product
+              to know if it fits how you operate, and we cannot refund
+              work-in-progress because the value of IBForge is the
+              doing, not the having.
+            </p>
+            <p className="landing-pricing-refund-link-row">
+              Full refund terms:{" "}
+              <a
+                href="/refund"
+                className="landing-pricing-refund-link"
+              >
+                ibforge.in/refund
+              </a>
+            </p>
+          </div>
         </div>
       </motion.section>
-
-      {/* ───────────────────────────────────────────────────────────────
-          SECTION 8 — Refund inline note (inside pricing, Chat 3)
-      ─────────────────────────────────────────────────────────────── */}
-      <section className="landing-section" aria-label="Refund note placeholder">
-        <p className="landing-placeholder-text">SECTION 8 — REFUND NOTE</p>
-      </section>
 
       {/* ───────────────────────────────────────────────────────────────
           SECTION 9 — Trust block (Chat 3)

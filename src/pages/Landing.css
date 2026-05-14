@@ -1267,3 +1267,74 @@
     font-size: 18px;
   }
 }
+
+/* ─── Section 8 — Refund inline note (embedded in Section 7) ───────
+   Full-width block below the 2-card pricing grid. Sits inside the
+   pricing section's <motion.section>, so it inherits the section's
+   reveal trigger — no own animation. Plain prose, secondary tone,
+   tighter line-length for readability than the section header (the
+   refund body is denser than a sub-headline). Calm, factual, no
+   visual emphasis — this is the closing reassurance beat before the
+   eye moves on to Trust. */
+
+.landing-pricing-refund {
+  /* Full width of the pricing-inner container, but with the body
+     itself clamped to readable line length. The wrapper carries no
+     visual treatment — no background, no border — so the refund text
+     reads as a calm note, not another card or callout. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  /* Sits below the pricing grid with breathing room. The pricing-inner
+     gap (var(--space-2xl)) already separates this from the grid, so no
+     extra top margin needed. */
+}
+
+.landing-pricing-refund-body {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  /* Wider than 56ch (header default) because the refund body is denser
+     and benefits from slightly longer lines. Caps at 72ch — readable
+     for prose, doesn't stretch edge-to-edge on a 1280px container. */
+  max-width: 72ch;
+}
+
+.landing-pricing-refund-link-row {
+  margin: 0;
+  font: var(--text-data);
+  font-size: 13px;
+  color: var(--color-text-disabled);
+  letter-spacing: var(--tracking-tight);
+}
+
+.landing-pricing-refund-link {
+  color: var(--color-electric-blue);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 150ms linear;
+}
+
+.landing-pricing-refund-link:hover {
+  border-bottom-color: var(--color-electric-blue);
+}
+
+.landing-pricing-refund-link:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 3px;
+}
+
+/* ─── Mobile (<768px) — refund note ────────────────────────────────
+   Inherits the parent .landing-pricing-section mobile padding rule
+   already declared above. Only the body line-length needs to relax
+   on mobile — 72ch wraps awkwardly at 375px since each line becomes
+   1–2 words. Cap it to 100% and let the container's mobile padding
+   (var(--space-md) on each side) control breathing room. */
+
+@media (max-width: 767px) {
+  .landing-pricing-refund-body {
+    max-width: 100%;
+    line-height: 1.55;
+  }
+}
