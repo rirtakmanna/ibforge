@@ -291,16 +291,48 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+  /* STEP 5.5 STEP 4: relative positioning anchors the absolutely-
+     positioned .landing-audience-card-border child. */
+  position: relative;
 }
 
-/* Modifier — inclusion card: green left border, 3px */
+/* ─── Animated border (STEP 5.5 STEP 4) ────────────────────────────
+   Replaces the static border-left declarations on the include/exclude
+   modifiers below. Draws scaleY 0 → 1 from the top via Framer Motion.
+   Sits over the card's 1px base border on the left edge — covers it
+   completely once drawn, leaving the 1px right/top/bottom intact. */
+.landing-audience-card-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  /* transformOrigin: top — set inline on the motion.div in JSX so it
+     reads in Framer Motion's style cascade alongside the variant. */
+}
+
+.landing-audience-card-border--include {
+  background: var(--color-success-green);
+}
+
+.landing-audience-card-border--exclude {
+  background: var(--color-error-red);
+}
+
+/* Modifier — inclusion card.
+   STEP 5.5 STEP 4: static border-left removed; the 3px green left edge
+   is now an animated .landing-audience-card-border--include child.
+   Modifier kept (empty for now) for future include-specific overrides
+   and to keep the JSX modifier hook consistent with --exclude. */
 .landing-audience-card--include {
-  border-left: 3px solid var(--color-success-green);
+  /* (border-left removed — see .landing-audience-card-border--include) */
 }
 
-/* Modifier — exclusion card: red left border, 3px */
+/* Modifier — exclusion card.
+   STEP 5.5 STEP 4: static border-left removed; the 3px red left edge
+   is now an animated .landing-audience-card-border--exclude child. */
 .landing-audience-card--exclude {
-  border-left: 3px solid var(--color-error-red);
+  /* (border-left removed — see .landing-audience-card-border--exclude) */
 }
 
 .landing-audience-card-title {

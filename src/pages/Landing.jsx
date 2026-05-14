@@ -166,6 +166,39 @@ const arcLabelStaticVariants = {
   visible: { opacity: 1 },
 };
 
+// ───────────────────────────────────────────────────────────────
+// AUDIENCE CARD BORDER DRAW-DOWN (Step 5.5 STEP 4 — Section 4)
+// Replaces the static CSS border-left with a 3px absolutely-positioned
+// motion.div per card. Animates scaleY 0 → 1 with transformOrigin top
+// over 500ms ease-out. Two cards get an 80ms stagger (left draws first)
+// via the grid's staggerChildren.
+//
+// Variant names "draw"/"drawn" avoid colliding with "hidden"/"visible"
+// from the section's reveal variants above.
+// ─────────────────────────────────────────────────────────────── */
+const audienceGridDrawVariants = {
+  draw: {},
+  drawn: {
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+};
+
+const audienceBorderVariants = {
+  draw: { scaleY: 0 },
+  drawn: {
+    scaleY: 1,
+    transition: { duration: 0.5, ease: [0, 0, 0.2, 1] },
+  },
+};
+
+// Static fallback — border is at final scaleY 1 from the start, no draw.
+const audienceBorderStaticVariants = {
+  draw: { scaleY: 1 },
+  drawn: { scaleY: 1 },
+};
+
 function Landing() {
   // prefers-reduced-motion: swap animated variants for static end-state.
   // The hook returns true when the OS-level setting is enabled. We compute
@@ -182,6 +215,13 @@ function Landing() {
   const arcPathVariantsActive = prefersReducedMotion ? arcPathStaticVariants : arcPathVariants;
   const arcDotVariantsActive = prefersReducedMotion ? arcDotStaticVariants : arcDotVariants;
   const arcLabelVariantsActive = prefersReducedMotion ? arcLabelStaticVariants : arcLabelVariants;
+
+  // Audience border-draw variants. Grid orchestrator passes through
+  // regardless of reduced-motion (it has no own animation, only stagger).
+  // The border child swaps to its static fallback when reduced-motion is on.
+  const audienceBorderVariantsActive = prefersReducedMotion
+    ? audienceBorderStaticVariants
+    : audienceBorderVariants;
 
   // Shared viewport config — fires 10% before section enters, single-fire.
   const revealViewport = { once: true, margin: "-10% 0px" };
@@ -571,9 +611,25 @@ function Landing() {
             Who this is for
           </h2>
 
-          <div className="landing-audience-grid">
-            {/* LEFT card — inclusion */}
+          <motion.div
+            className="landing-audience-grid"
+            initial="draw"
+            whileInView="drawn"
+            viewport={revealViewport}
+            variants={audienceGridDrawVariants}
+          >
+            {/* LEFT card — inclusion
+                STEP 5.5 STEP 4: static CSS border-left removed; 3px
+                absolutely-positioned motion.div draws scaleY 0 → 1 from
+                the top on scroll-into-view. Border color comes from
+                .landing-audience-card-border--include in Landing.css. */}
             <div className="landing-audience-card landing-audience-card--include">
+              <motion.div
+                className="landing-audience-card-border landing-audience-card-border--include"
+                variants={audienceBorderVariantsActive}
+                style={{ transformOrigin: "top" }}
+                aria-hidden="true"
+              />
               <h3 className="landing-audience-card-title">
                 This is for you if
               </h3>
@@ -590,8 +646,17 @@ function Landing() {
               </ul>
             </div>
 
-            {/* RIGHT card — exclusion */}
+            {/* RIGHT card — exclusion
+                Stagger: 80ms after the left card via the grid's
+                staggerChildren. Border color comes from
+                .landing-audience-card-border--exclude in Landing.css. */}
             <div className="landing-audience-card landing-audience-card--exclude">
+              <motion.div
+                className="landing-audience-card-border landing-audience-card-border--exclude"
+                variants={audienceBorderVariantsActive}
+                style={{ transformOrigin: "top" }}
+                aria-hidden="true"
+              />
               <h3 className="landing-audience-card-title">
                 This is not for you if
               </h3>
@@ -607,7 +672,7 @@ function Landing() {
                 </li>
               </ul>
             </div>
-          </div>
+          </motion.div>
         </div>
       </motion.section>
 
