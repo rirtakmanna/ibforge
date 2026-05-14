@@ -811,3 +811,459 @@
     aspect-ratio: 2 / 1;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 7 — PRICING (Chat 5)
+   Two cards side-by-side desktop, stacked mobile. Trial card (₹0) carries
+   an accordion email-entry form (animated by Framer Motion in JSX — this
+   CSS only styles the form, the height transition lives in the variant).
+   Full-access card carries strike-through founder pricing, an amber Udemy
+   honesty box, and the UPI CTA. Embedded amber box uses color-mix() for
+   a 10% amber tint without introducing a new --color-warning-amber-10
+   token — keeps variables.css unmodified per project hygiene rules.
+═══════════════════════════════════════════════════════════════════════ */
+
+.landing-pricing-section {
+  /* Override .landing-section's placeholder layout (flex centering and
+     min-height) — full content flow inside .landing-pricing-inner. */
+  display: block;
+  min-height: 0;
+  padding: var(--space-3xl) var(--space-xl);
+}
+
+.landing-pricing-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+/* ─── Section header ──────────────────────────────────────────────── */
+
+.landing-pricing-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 56ch;
+}
+
+.landing-pricing-eyebrow {
+  margin: 0;
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-electric-blue);
+}
+
+.landing-pricing-heading {
+  margin: 0;
+  font: var(--text-h2);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+/* ─── Two-card grid ───────────────────────────────────────────────── */
+
+.landing-pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  /* align-items: stretch — cards share height. The trial card uses the
+     extra vertical space via flex-grow on its inclusion list, pushing
+     its footer to the bottom so the trial CTA aligns with the Pay UPI
+     button on the full-access card. */
+  align-items: stretch;
+}
+
+/* ─── Card base ───────────────────────────────────────────────────── */
+
+.landing-pricing-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Full-access card gets a 1px electric-blue accent border to mark it
+   as the primary path — subtle, no glow, no shadow. Trial card stays
+   on default border so the eye lands on the paid card. */
+.landing-pricing-card--full {
+  border-color: var(--color-electric-blue);
+}
+
+/* ─── Card header (title + price row) ─────────────────────────────── */
+
+.landing-pricing-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.landing-pricing-card-title {
+  margin: 0;
+  font: var(--text-h3);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+/* Price row — flex so strike + headline + tag align on the baseline.
+   Wraps on narrow widths so the strike-through doesn't squeeze the
+   headline. */
+.landing-pricing-card-price-row {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-md);
+}
+
+/* Headline price — JetBrains Mono, display-size, primary text */
+.landing-pricing-card-price {
+  font: var(--text-display);
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+
+/* Accent variant — only used on the full-access card's ₹1,699.
+   The discount is the visual anchor; amber drives attention without
+   shouting. */
+.landing-pricing-card-price--accent {
+  color: var(--color-warning-amber);
+}
+
+/* Struck-through original price (₹2,499) — smaller, muted, with line-through */
+.landing-pricing-card-price-strike {
+  font: var(--text-data);
+  font-size: 20px;
+  color: var(--color-text-disabled);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+}
+
+/* Founder tag — small caps, amber, sits right under the price row */
+.landing-pricing-card-founder-tag {
+  margin: 0;
+  font: var(--text-micro);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-warning-amber);
+}
+
+/* ─── Inclusion list ──────────────────────────────────────────────── */
+
+.landing-pricing-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* --grow modifier: applied only to the trial card's list. Flex-grows
+   to consume the extra vertical space created when the trial card
+   stretches to match the full-access card's height. Pushes the
+   footer slot (CTA or form) to the bottom of the card so the trial
+   CTA aligns horizontally with the Pay UPI button on the right.
+   align-self: stretch ensures it grows along the cross-axis too.
+   The full-access card doesn't use this modifier — its content
+   already fills the card naturally (4 items + amber box + CTA). */
+.landing-pricing-list--grow {
+  flex: 1 1 auto;
+  align-self: stretch;
+}
+
+/* Trial footer slot — wraps either the CTA button OR the accordion form.
+   AnimatePresence mode="wait" in JSX ensures only one is mounted at a
+   time. The slot has no fixed height — its content (CTA or form)
+   determines its size, and the list above flex-grows to fill the rest
+   of the card. Result: footer is bottom-anchored, both cards align. */
+.landing-pricing-trial-footer {
+  display: flex;
+  flex-direction: column;
+  /* Width 100% so the in-place swap doesn't reflow horizontally */
+  width: 100%;
+}
+
+.landing-pricing-item {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  /* Visual leader — a thin accent before each item. Pure ::before
+     pseudo, no extra DOM. The accent is electric-blue on the
+     full-access card, muted on the trial card (handled via the
+     parent modifier below). */
+  position: relative;
+  padding-left: var(--space-md);
+}
+
+.landing-pricing-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 8px;
+  height: 1px;
+  background: var(--color-text-disabled);
+}
+
+/* Full-access card list items get an electric-blue accent line —
+   reinforces that this is the active / paid path. */
+.landing-pricing-card--full .landing-pricing-item::before {
+  background: var(--color-electric-blue);
+}
+
+/* ─── Amber Udemy honesty box (full-access card only) ─────────────── */
+
+.landing-pricing-honesty {
+  /* Local tint — 10% amber background WITHOUT introducing a new token.
+     color-mix() blends amber against transparent at 10% — modern
+     browser support (Chrome 111+, Safari 16.2+, Firefox 113+).
+     IE11/legacy: degrades to no background (border-left still visible).
+
+     Padding generous; left-border 3px amber makes it scan as a callout
+     even before the colors land. */
+  background: color-mix(in srgb, var(--color-warning-amber) 10%, transparent);
+  border-left: 3px solid var(--color-warning-amber);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.landing-pricing-honesty-label {
+  margin: 0;
+  font: var(--text-micro);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-warning-amber);
+}
+
+.landing-pricing-honesty-body {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+}
+
+.landing-pricing-honesty-math {
+  margin: 0;
+  font: var(--text-data);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* ─── CTAs ────────────────────────────────────────────────────────── */
+
+/* Trial CTA — ghost button. Quieter than the paid CTA on purpose; the
+   trial path is the "soft entry," the full-access CTA is the "loud
+   commitment." */
+.landing-pricing-cta {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  font: var(--text-button);
+  font-size: 14px;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 0;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 150ms linear, color 150ms linear,
+              border-color 150ms linear, transform 80ms linear;
+}
+
+/* Trial — ghost (transparent bg, electric-blue border + text) */
+.landing-pricing-cta--trial {
+  background: transparent;
+  color: var(--color-electric-blue);
+  border: 1px solid var(--color-electric-blue);
+}
+
+.landing-pricing-cta--trial:hover {
+  background: var(--color-electric-blue-10);
+}
+
+.landing-pricing-cta--trial:active {
+  transform: scale(0.98);
+}
+
+.landing-pricing-cta--trial:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 4px;
+}
+
+/* Full-access — solid electric-blue (primary CTA pattern from Hero) */
+.landing-pricing-cta--full {
+  background: var(--color-electric-blue);
+  color: var(--color-black);
+  border: 1px solid var(--color-electric-blue);
+}
+
+.landing-pricing-cta--full:hover {
+  background: var(--color-electric-blue-hover);
+  border-color: var(--color-electric-blue-hover);
+}
+
+.landing-pricing-cta--full:active {
+  transform: scale(0.98);
+}
+
+.landing-pricing-cta--full:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 4px;
+}
+
+/* ─── Trial accordion form (Framer Motion animates height/opacity) ── */
+
+/* The wrap carries overflow:hidden so the height: "auto" animation
+   from Framer Motion can clip the form during the open/close transition.
+   Without this, the form content briefly overflows the card during the
+   first 50ms of the height animation. */
+.landing-pricing-trial-form-wrap {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Close button — small ghost link, sits above the form per spec.
+   Quieter than the CTA it replaced because the user is now committed
+   to the form; the back-out should be available but not loud. */
+.landing-pricing-trial-close {
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: var(--text-button);
+  font-size: 13px;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: color 150ms linear;
+}
+
+.landing-pricing-trial-close:hover {
+  color: var(--color-electric-blue);
+}
+
+.landing-pricing-trial-close:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 4px;
+}
+
+.landing-pricing-trial-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.landing-pricing-trial-label {
+  font: var(--text-label);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-normal);
+  /* Tight spacing — label sits hard against the input */
+  margin-bottom: var(--space-xs);
+}
+
+.landing-pricing-trial-input {
+  appearance: none;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 12px var(--space-md);
+  color: var(--color-text-primary);
+  font: var(--text-body);
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 150ms linear;
+}
+
+.landing-pricing-trial-input::placeholder {
+  color: var(--color-text-disabled);
+}
+
+.landing-pricing-trial-input:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.landing-pricing-trial-input:focus-visible {
+  border-color: var(--color-electric-blue);
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+.landing-pricing-trial-submit {
+  appearance: none;
+  background: var(--color-electric-blue);
+  color: var(--color-black);
+  border: 1px solid var(--color-electric-blue);
+  border-radius: 0;
+  padding: 12px var(--space-lg);
+  font: var(--text-button);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: var(--space-xs);
+  transition: background-color 150ms linear, transform 80ms linear;
+}
+
+.landing-pricing-trial-submit:hover {
+  background: var(--color-electric-blue-hover);
+  border-color: var(--color-electric-blue-hover);
+}
+
+.landing-pricing-trial-submit:active {
+  transform: scale(0.98);
+}
+
+.landing-pricing-trial-submit:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 4px;
+}
+
+/* ─── Mobile (<768px) — stack cards vertically ─────────────────────── */
+
+@media (max-width: 767px) {
+  .landing-pricing-section {
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .landing-pricing-inner {
+    gap: var(--space-xl);
+  }
+
+  .landing-pricing-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .landing-pricing-card {
+    padding: var(--space-lg);
+  }
+
+  /* Slightly tighter price size on mobile — display token (60px) is too
+     dominant at 375px against a narrow card. JetBrains Mono numerals
+     stay readable at 44px. */
+  .landing-pricing-card-price {
+    font-size: 44px;
+  }
+
+  .landing-pricing-card-price-strike {
+    font-size: 18px;
+  }
+}

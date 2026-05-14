@@ -407,6 +407,68 @@ const proofCardVariants = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────
+// SECTION 7 — Pricing: variants
+// Per kickoff: "2 cards reveal together (no stagger). Amber honesty box
+// fades 200ms after parent." Grid is a no-stagger reveal — both cards
+// share the same enter timing as their parent section. The amber box
+// is the only delayed child: it fades in 200ms after the right card
+// has settled, drawing the eye to it as the last beat on the section.
+//
+// Trial accordion: height 0 → auto + opacity 0 → 1 over 250ms ease-out
+// per kickoff. Framer Motion's height: "auto" animation works via a
+// layout dependency — we measure the natural height once and animate
+// to that value. Wrapped in AnimatePresence so the accordion can also
+// collapse if the user clicks the trigger again.
+// ─────────────────────────────────────────────────────────────────
+
+// Pricing grid orchestrator — children inherit reveal timing from
+// the parent section; no own stagger between the two cards (they
+// reveal together). delayChildren:0.1 hands timing off cleanly so
+// the section lift fully settles before card content paints.
+const pricingGridVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      delayChildren: 0.1,
+    },
+  },
+};
+
+// Each pricing card — fade + 6px lift, 250ms ease-out. Matches the
+// audience card pattern (Section 4) for visual consistency between
+// "two-card decision moment" sections.
+const pricingCardVariants = {
+  hidden: { opacity: 0, y: 6 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: [0, 0, 0.2, 1] },
+  },
+};
+
+// Amber Udemy honesty box — fades in 200ms after the right card has
+// settled. The right card's "visible" transition is 250ms (cardVariants
+// duration) + 100ms delayChildren = ~350ms total from section entry.
+// We add another 200ms delay = 550ms from section entry. Total = "the
+// honesty box appears LAST as the section's closing beat."
+const pricingAmberVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.2, ease: [0, 0, 0.2, 1], delay: 0.55 },
+  },
+};
+
+// Trial accordion form — height 0 → auto, opacity 0 → 1, 250ms ease-out.
+// Framer Motion supports height: "auto" natively; it measures children
+// at runtime. Combined with AnimatePresence in JSX so the same variant
+// also handles collapse on re-click.
+const trialAccordionVariants = {
+  collapsed: { height: 0, opacity: 0, transition: { duration: 0.25, ease: [0, 0, 0.2, 1] } },
+  expanded: { height: "auto", opacity: 1, transition: { duration: 0.25, ease: [0, 0, 0.2, 1] } },
+};
+
 function Landing() {
   // prefers-reduced-motion: swap animated variants for static end-state.
   // The hook returns true when the OS-level setting is enabled. We compute
@@ -446,6 +508,36 @@ function Landing() {
   const [hoverModule, setHoverModule] = useState(null);
   const [openModule, setOpenModule] = useState(null);
   const toggleModule = (n) => setOpenModule((prev) => (prev === n ? null : n));
+
+  // ───────────────────────────────────────────────────────────────
+  // Section 7 — Pricing card interaction state
+  //
+  // isTrialFormOpen: drives the accordion expand on the trial card.
+  //   Clicking "Get trial code" opens it; clicking again collapses.
+  // trialEmail: controlled input value for the email field.
+  // handleTrialSubmit: Phase 4A placeholder — preventDefault + log only.
+  //   Phase 4B wires this to the Resend serverless function.
+  // handleUpiPay: Phase 4A placeholder — preventDefault only.
+  //   Phase 4C wires this to the UPI checkout flow.
+  // ───────────────────────────────────────────────────────────────
+  const [isTrialFormOpen, setIsTrialFormOpen] = useState(false);
+  const [trialEmail, setTrialEmail] = useState("");
+
+  const handleTrialSubmit = (e) => {
+    e.preventDefault();
+    // TODO Phase 4B: POST email to /.netlify/functions/issue-trial-code
+    // For now: log only. Form stays open; no UI feedback yet.
+    // eslint-disable-next-line no-console
+    console.log("[trial-form-placeholder] email submitted:", trialEmail);
+  };
+
+  const handleUpiPay = (e) => {
+    e.preventDefault();
+    // TODO Phase 4C: open UPI checkout flow (likely a Razorpay redirect
+    // or upi:// intent on mobile). Phase 4A: no-op.
+    // eslint-disable-next-line no-console
+    console.log("[upi-pay-placeholder] checkout requested");
+  };
 
   return (
     <div className="landing">
@@ -1075,18 +1167,236 @@ function Landing() {
       </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
-          SECTION 7 — Pricing (Chat 3)
-          id="pricing" — anchor target for Nav "Get access" button.
-          Smooth scroll is enabled globally via html { scroll-behavior: smooth }
-          in index.css. Anchor works as soon as STEP 2 wires the Nav button.
+          SECTION 7 — Pricing (Chat 5)
+          id="pricing" — anchor target for the Hero CTA + Nav "Get access".
+
+          Two cards side-by-side desktop, stacked mobile:
+            LEFT — Trial (₹0, Module 1 free, accordion email form)
+            RIGHT — Full Access (₹1,699 founder price, ₹2,499 struck through,
+                                 amber Udemy honesty box)
+
+          Both cards reveal together (no stagger between them — per kickoff:
+          "2 cards reveal together"). The amber honesty box is the lone
+          delayed beat: fades in 200ms after the right card has settled,
+          giving the page its closing rhythm before the refund / trust /
+          footer sections.
+
+          Form handlers are Phase 4A placeholders — preventDefault + log.
+          Phase 4B wires the trial code email via Resend.
+          Phase 4C wires the UPI payment flow.
       ─────────────────────────────────────────────────────────────── */}
-      <section
+      <motion.section
         id="pricing"
-        className="landing-section"
-        aria-label="Pricing placeholder"
+        className="landing-section landing-pricing-section"
+        aria-labelledby="landing-pricing-heading"
+        variants={revealVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={revealViewport}
       >
-        <p className="landing-placeholder-text">SECTION 7 — PRICING</p>
-      </section>
+        <div className="landing-pricing-inner">
+          <header className="landing-pricing-header">
+            <p className="landing-pricing-eyebrow">Pricing</p>
+            <h2 id="landing-pricing-heading" className="landing-pricing-heading">
+              Try Module 1 free. Or commit to the full 14 modules.
+            </h2>
+          </header>
+
+          <motion.div
+            className="landing-pricing-grid"
+            variants={prefersReducedMotion ? moduleStaticVariants : pricingGridVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={revealViewport}
+          >
+            {/* ─── LEFT CARD — Trial ──────────────────────────────── */}
+            <motion.article
+              className="landing-pricing-card landing-pricing-card--trial"
+              variants={prefersReducedMotion ? moduleStaticVariants : pricingCardVariants}
+              aria-labelledby="trial-card-heading"
+            >
+              <header className="landing-pricing-card-header">
+                <h3 id="trial-card-heading" className="landing-pricing-card-title">
+                  Module 1 — free
+                </h3>
+                <p className="landing-pricing-card-price-row">
+                  <span className="landing-pricing-card-price">₹0</span>
+                </p>
+              </header>
+
+              <ul className="landing-pricing-list landing-pricing-list--grow" role="list">
+                <li className="landing-pricing-item">
+                  7 steps in Module 1 (Accounting fundamentals)
+                </li>
+                <li className="landing-pricing-item">
+                  Real deliverable upload, real portfolio entry
+                </li>
+                <li className="landing-pricing-item">
+                  One trial code, single use
+                </li>
+              </ul>
+
+              {/* Footer slot — same height whether the CTA or the form is
+                  showing. AnimatePresence mode="wait" swaps content in
+                  place: the CTA fades out fully before the form fades in
+                  (and vice versa). The slot itself has min-height so the
+                  card doesn't reflow during the swap.
+
+                  Close button sits ABOVE the form (per spec). Form has its
+                  own vertical layout inside the slot. */}
+              <div className="landing-pricing-trial-footer">
+                <AnimatePresence mode="wait" initial={false}>
+                  {!isTrialFormOpen ? (
+                    <motion.button
+                      key="trial-cta"
+                      type="button"
+                      className="landing-pricing-cta landing-pricing-cta--trial"
+                      aria-expanded={false}
+                      aria-controls="trial-form-panel"
+                      onClick={() => setIsTrialFormOpen(true)}
+                      variants={
+                        prefersReducedMotion
+                          ? moduleStaticVariants
+                          : trialAccordionVariants
+                      }
+                      initial="collapsed"
+                      animate="expanded"
+                      exit="collapsed"
+                    >
+                      Get trial code
+                    </motion.button>
+                  ) : (
+                    <motion.div
+                      key="trial-form"
+                      id="trial-form-panel"
+                      className="landing-pricing-trial-form-wrap"
+                      variants={
+                        prefersReducedMotion
+                          ? moduleStaticVariants
+                          : trialAccordionVariants
+                      }
+                      initial="collapsed"
+                      animate="expanded"
+                      exit="collapsed"
+                    >
+                      {/* Close button — sits above the form per spec */}
+                      <button
+                        type="button"
+                        className="landing-pricing-trial-close"
+                        aria-expanded={true}
+                        aria-controls="trial-form-panel"
+                        onClick={() => setIsTrialFormOpen(false)}
+                      >
+                        ← Close
+                      </button>
+                      <form
+                        className="landing-pricing-trial-form"
+                        onSubmit={handleTrialSubmit}
+                        noValidate
+                      >
+                        <label
+                          className="landing-pricing-trial-label"
+                          htmlFor="trial-email-input"
+                        >
+                          Email
+                        </label>
+                        <input
+                          id="trial-email-input"
+                          className="landing-pricing-trial-input"
+                          type="email"
+                          name="email"
+                          required
+                          autoComplete="email"
+                          placeholder="you@example.com"
+                          value={trialEmail}
+                          onChange={(e) => setTrialEmail(e.target.value)}
+                        />
+                        <button
+                          type="submit"
+                          className="landing-pricing-trial-submit"
+                        >
+                          Email me a code
+                        </button>
+                      </form>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.article>
+
+            {/* ─── RIGHT CARD — Full Access ──────────────────────── */}
+            <motion.article
+              className="landing-pricing-card landing-pricing-card--full"
+              variants={prefersReducedMotion ? moduleStaticVariants : pricingCardVariants}
+              aria-labelledby="full-card-heading"
+            >
+              <header className="landing-pricing-card-header">
+                <h3 id="full-card-heading" className="landing-pricing-card-title">
+                  Full access — all 14 modules
+                </h3>
+                <p className="landing-pricing-card-price-row">
+                  <span className="landing-pricing-card-price-strike">
+                    ₹2,499
+                  </span>
+                  <span className="landing-pricing-card-price landing-pricing-card-price--accent">
+                    ₹1,699
+                  </span>
+                </p>
+                <p className="landing-pricing-card-founder-tag">
+                  Founder pricing — first 20 customers
+                </p>
+              </header>
+
+              <ul className="landing-pricing-list" role="list">
+                <li className="landing-pricing-item">
+                  All 14 modules, locked step sequence
+                </li>
+                <li className="landing-pricing-item">
+                  10 real company financial models to build
+                </li>
+                <li className="landing-pricing-item">
+                  Portfolio page with every deliverable, ready for LinkedIn
+                </li>
+                <li className="landing-pricing-item">
+                  Email support at hello@ibforge.in
+                </li>
+              </ul>
+
+              {/* Amber Udemy honesty box — independent reveal (200ms after
+                  parent card settles). Animates opacity only; the box's
+                  static position in the layout doesn't change. Static
+                  fallback under reduced-motion just renders it at opacity 1
+                  from the start, no fade. */}
+              <motion.aside
+                className="landing-pricing-honesty"
+                role="note"
+                variants={prefersReducedMotion ? moduleStaticVariants : pricingAmberVariants}
+              >
+                <p className="landing-pricing-honesty-label">
+                  Honest cost note
+                </p>
+                <p className="landing-pricing-honesty-body">
+                  Courses I reference are on Udemy. Udemy subscription
+                  runs around ₹700 per month. You will need 1 to 2 months
+                  of subscription to cover all referenced courses.
+                </p>
+                <p className="landing-pricing-honesty-math">
+                  Total cost to you: ₹1,699 (IBForge) + around ₹1,400
+                  (Udemy 2 months) ≈ ₹3,100.
+                </p>
+              </motion.aside>
+
+              <button
+                type="button"
+                className="landing-pricing-cta landing-pricing-cta--full"
+                onClick={handleUpiPay}
+              >
+                Pay ₹1,699 via UPI →
+              </button>
+            </motion.article>
+          </motion.div>
+        </div>
+      </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
           SECTION 8 — Refund inline note (inside pricing, Chat 3)
