@@ -138,7 +138,7 @@ function Layout() {
       {/* Desktop + Tablet top bar */}
       <header className="layout-top" role="banner">
         <div className="layout-top-inner">
-          <NavLink to="/" end className="layout-brand" aria-label="ATLAS — Dashboard">
+          <NavLink to="/" end className="layout-brand" aria-label="IBForge — Dashboard">
             <span className="layout-brand-mark" aria-hidden="true">
               <svg
                 className="layout-logo-static"
@@ -200,7 +200,7 @@ function Layout() {
                 </line>
               </svg>
             </span>
-            <span className="layout-brand-word">ATLAS</span>
+            <span className="layout-brand-word">IBForge</span>
           </NavLink>
 
           <nav className="layout-nav layout-nav-desktop" aria-label="Primary">
@@ -257,8 +257,8 @@ function Layout() {
       {/* Mobile top bar — DESIGN DECISION (Phase 2A): ATLAS logo left, Avatar right.
          Overrides Brand System §Mobile Navigation (which specifies avatar-left).
          Reason: operator preference; dropdown anchored right to prevent overflow. */}
-      <header className="layout-mobile-top" role="banner" aria-label="ATLAS">
-        <NavLink to="/" end className="layout-mobile-brand" aria-label="ATLAS — Dashboard">
+      <header className="layout-mobile-top" role="banner" aria-label="IBForge">
+        <NavLink to="/" end className="layout-mobile-brand" aria-label="IBForge — Dashboard">
           <svg
             className="layout-logo-static"
             width="32"

@@ -52,7 +52,7 @@ function AtlasLogoAnimated() {
   // - Rotating SVG: a single line that orbits 360° around (179.5, 179.5), 4s linear infinite
   // Wrapper is position: relative, overflow: visible (line protrudes at extremes).
   return (
-    <span className="login-logo" aria-label="ATLAS">
+    <span className="login-logo" aria-label="IBForge">
       <span className="login-logo-icon" aria-hidden="true">
         <svg
           className="login-logo-static"
@@ -114,7 +114,7 @@ function AtlasLogoAnimated() {
           </line>
         </svg>
       </span>
-      <span className="login-logo-wordmark">ATLAS</span>
+      <span className="login-logo-wordmark">IBForge</span>
     </span>
   );
 }
