@@ -1,0 +1,203 @@
+/* src/components/landing/LandingNav.css
+ *
+ * Sticky public-page nav. Sharp corners, brand tokens only.
+ *
+ * Layout:
+ *   - 64px tall desktop, 56px tall mobile
+ *   - Sticky at top of viewport, sits over hero with no background fill
+ *     (background is transparent — terminal aesthetic over dark page bg)
+ *   - Border-bottom is a separately positioned 1px line animated via opacity
+ *     to avoid layout shift when scroll passes the hero
+ */
+
+.landing-nav {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 64px;
+  background: var(--color-bg-primary);
+  /* Subtle backdrop blur — only kicks in once content scrolls beneath */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.landing-nav-inner {
+  height: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+}
+
+/* ─── Brand cluster (logo + wordmark) ──────────────────────────────────
+   Mirrors Layout.css .layout-brand pattern exactly so the logo renders
+   identically on / and /dashboard. If you change one, change both.
+─────────────────────────────────────────────────────────────────────── */
+
+.landing-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font: var(--text-h3);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  outline: none;
+}
+
+.landing-nav-brand .landing-nav-word {
+  color: var(--color-text-primary);
+  transition: color var(--duration-base) linear;
+}
+
+.landing-nav-brand:hover .landing-nav-word {
+  color: var(--color-electric-blue);
+}
+
+.landing-nav-brand:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 4px;
+}
+
+.landing-nav-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--color-electric-blue);
+}
+
+.landing-nav-mark .landing-nav-logo-static,
+.landing-nav-mark .landing-nav-logo-rotor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+/* ─── CTAs ────────────────────────────────────────────────────────────── */
+
+.landing-nav-ctas {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.landing-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 var(--space-lg);
+  font: var(--text-button);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 0; /* sharp */
+  cursor: pointer;
+  transition:
+    background-color 150ms linear,
+    color 150ms linear,
+    border-color 150ms linear;
+}
+
+.landing-nav-cta:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+/* Ghost button — "I have a code" */
+.landing-nav-cta--ghost {
+  background: transparent;
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+.landing-nav-cta--ghost:hover {
+  border-color: var(--color-electric-blue);
+  color: var(--color-electric-blue);
+  background: var(--color-electric-blue-10);
+}
+
+/* Primary button — "Get access" */
+.landing-nav-cta--primary {
+  background: var(--color-electric-blue);
+  color: #000000;
+  border: 1px solid var(--color-electric-blue);
+}
+
+.landing-nav-cta--primary:hover {
+  background: var(--color-electric-blue-hover);
+  border-color: var(--color-electric-blue-hover);
+}
+
+.landing-nav-cta--primary:active {
+  transform: scale(0.97);
+}
+
+/* ─── Animated bottom border ──────────────────────────────────────────── */
+
+.landing-nav-border {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-border);
+  pointer-events: none;
+}
+
+/* ─── Mobile (<768px) ─────────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .landing-nav {
+    height: 56px;
+  }
+
+  .landing-nav-inner {
+    padding: 0 var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .landing-nav-word {
+    font-size: 18px;
+  }
+
+  /* "I have a code" hides on mobile — primary CTA is what matters here.
+     The secondary CTA is reachable from the pricing section directly. */
+  .landing-nav-cta--ghost {
+    display: none;
+  }
+
+  .landing-nav-cta {
+    height: 36px;
+    padding: 0 var(--space-md);
+    font-size: 12px;
+  }
+}
+
+/* ─── Reduced-motion respect ──────────────────────────────────────────
+   SMIL <animateTransform> cannot be stopped via animation-duration: 0s.
+   Pause via animation-play-state AND hide via display:none, mirroring
+   Layout.css. Per Core Architecture Rule 4(c), SMIL is the one permitted
+   exception to "Framer Motion for all animations" and must respect
+   prefers-reduced-motion.
+─────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .landing-nav-mark .landing-nav-logo-rotor animateTransform {
+    animation-play-state: paused;
+  }
+  .landing-nav-mark .landing-nav-logo-rotor {
+    display: none;
+  }
+}

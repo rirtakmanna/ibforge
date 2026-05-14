@@ -14,6 +14,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import Layout from "@/components/Layout";
 import RequireAuth from "@/components/RequireAuth";
 
+import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Roadmap from "@/pages/Roadmap";
@@ -28,8 +29,11 @@ function App() {
     <BrowserRouter>
       <ErrorBoundary>
         <Routes>
+          {/* Public routes — no auth, no Layout shell */}
+          <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
 
+          {/* Authenticated routes — all under <Layout /> via <Outlet /> */}
           <Route
             element={
               <RequireAuth>
@@ -37,7 +41,7 @@ function App() {
               </RequireAuth>
             }
           >
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/roadmap" element={<Roadmap />} />
             <Route path="/step/:id" element={<StepDetail />} />
             <Route path="/step/:id/generate" element={<GenerateProject />} />

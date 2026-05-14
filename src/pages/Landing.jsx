@@ -1,0 +1,382 @@
+// src/pages/Landing.jsx
+//
+// Public landing page at "/" — shell-less, no Layout wrapper, no auth guard.
+// Strangers land here. Logged-in operators also land here at "/" — they get
+// to /dashboard via the Nav "Get access" button's pricing scroll OR by typing
+// /dashboard directly. There is no auto-redirect from / for logged-in users.
+//
+// 10 sections, in order:
+//   1. Nav                — sticky top bar (STEP 2)
+//   2. Hero               — headline + journey arc + primary CTA (STEP 3)
+//   3. Benefits           — 4 graphic benefit cards (STEP 4)
+//   4. Audience filter    — "for you" / "not for you" (STEP 5)
+//   5. Modules            — 14-module grid (Chat 3)
+//   6. Proof              — 3 screenshot cards (Chat 3)
+//   7. Pricing            — trial + full access cards (Chat 3) — id="pricing"
+//   8. Refund inline note — within pricing section (Chat 3)
+//   9. Trust              — founder + links (Chat 3)
+//  10. Footer             — wordmark + tagline + copyright (Chat 3)
+//
+// Brand voice lock (ATLAS_Brand_System.md §Brand Voice):
+//   No exclamation marks. No emoji. No congratulatory language.
+//   Short sentences. Active voice. State facts not feelings.
+
+import LandingNav from "@/components/landing/LandingNav";
+import BenefitCard from "@/components/landing/BenefitCard";
+import "./Landing.css";
+
+function Landing() {
+  return (
+    <div className="landing">
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 1 — Nav
+      ─────────────────────────────────────────────────────────────── */}
+      <LandingNav />
+
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 2 — Hero
+          Headline in --text-display (60px Space Grotesk Bold). Brand voice
+          rules: no exclamation marks, no emoji, short sentences. The line
+          break inside the headline is intentional — the second line is the
+          "what" beat, set apart visually.
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="landing-hero" aria-labelledby="hero-headline">
+        <div className="landing-hero-inner">
+          <h1 id="hero-headline" className="landing-hero-headline">
+            Not a course.
+            <br />
+            A record of what you actually built.
+          </h1>
+
+          <p className="landing-hero-subhead">
+            IBForge is the structure I&apos;m walking myself — from financial
+            data work to a 10-model investment banking portfolio.
+          </p>
+
+          {/* Journey arc — 14 dots rising from baseline (M1) to peak (M14).
+              Pure SVG, no Framer Motion needed; the visual is static.
+              viewBox is 700×200; responsive via width:100%; height:auto in CSS. */}
+          <div className="landing-hero-arc" aria-hidden="true">
+            <svg
+              viewBox="0 0 700 200"
+              xmlns="http://www.w3.org/2000/svg"
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label="14-module journey arc from accounting fundamentals to interview readiness"
+            >
+              {/* Baseline reference line — very subtle, drops below the arc */}
+              <line
+                x1="40"
+                y1="160"
+                x2="660"
+                y2="160"
+                stroke="var(--color-border)"
+                strokeWidth="1"
+                strokeDasharray="2 4"
+              />
+
+              {/* The rising curve — quadratic-style, from (40, 160) up to (660, 40).
+                  Path drawn with a single cubic Bézier for a smooth, slightly
+                  asymmetric rise (steeper in the back half — modules 11–14 are
+                  where the real synthesis work happens). */}
+              <path
+                d="M 40 160 C 220 160, 380 130, 660 40"
+                stroke="var(--color-electric-blue)"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+              />
+
+              {/* 14 dots, evenly spaced in x, y interpolated along the curve.
+                  Coordinates pre-calculated to sit ON the path (sampled at
+                  t = 0, 1/13, 2/13 ... 13/13). Last dot is slightly larger
+                  to emphasize the M14 endpoint. */}
+              <circle cx="40"  cy="160" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="88"  cy="159" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="136" cy="156" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="184" cy="152" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="231" cy="147" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="279" cy="141" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="327" cy="133" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="374" cy="124" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="422" cy="113" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="469" cy="100" r="4" fill="var(--color-electric-blue)" />
+              <circle cx="517" cy="86"  r="4" fill="var(--color-electric-blue)" />
+              <circle cx="565" cy="70"  r="4" fill="var(--color-electric-blue)" />
+              <circle cx="612" cy="54"  r="4" fill="var(--color-electric-blue)" />
+              <circle cx="660" cy="40"  r="6" fill="var(--color-electric-blue)" />
+
+              {/* Labels — endpoint anchors only. JetBrains Mono terminal style. */}
+              <text
+                x="40"
+                y="185"
+                fontFamily="var(--font-mono)"
+                fontSize="11"
+                fill="var(--color-text-secondary)"
+                textAnchor="start"
+                letterSpacing="0.5"
+              >
+                M1 — ACCOUNTING
+              </text>
+              <text
+                x="660"
+                y="25"
+                fontFamily="var(--font-mono)"
+                fontSize="11"
+                fill="var(--color-text-secondary)"
+                textAnchor="end"
+                letterSpacing="0.5"
+              >
+                M14 — INTERVIEW READY
+              </text>
+            </svg>
+          </div>
+
+          <div className="landing-hero-ctas">
+            <a
+              href="#pricing"
+              className="landing-hero-cta-primary"
+            >
+              Try Module 1 free
+            </a>
+            <a
+              href="#pricing"
+              className="landing-hero-cta-secondary"
+            >
+              Skip trial — get full access ↓
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 3 — Benefits
+          Four cards, 2×2 grid desktop, 1-column mobile.
+          Each card: inline SVG illustration + H3 + one sentence.
+          Hover: Logo Card Hover State (tint + scaling bottom bar).
+          SVG icons inlined below — kept here (not in BenefitCard) so all
+          four illustrations live in one file for visual review.
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="landing-benefits" aria-labelledby="benefits-heading">
+        <div className="landing-benefits-inner">
+          <h2 id="benefits-heading" className="landing-benefits-heading">
+            What you actually get
+          </h2>
+
+          <div className="landing-benefits-grid">
+            {/* Card 1 — Locked step sequence
+                Illustration: vertical step chain, one active (filled) dot,
+                two locked (outlined) dots. Reinforces the sequence lock. */}
+            <BenefitCard
+              title="Locked step sequence"
+              body="Each step unlocks only when the previous step is complete and its deliverable is uploaded. No skipping."
+              icon={
+                <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
+                  <line x1="28" y1="10" x2="28" y2="46"
+                        stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 3" />
+                  <circle cx="28" cy="12" r="6"
+                          fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="28" cy="28" r="6"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="28" cy="44" r="6"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
+                </svg>
+              }
+            />
+
+            {/* Card 2 — Real files, real portfolio
+                Illustration: 3 stacked file rectangles with ".xlsx" label
+                on the topmost. Suggests a deliverable archive. */}
+            <BenefitCard
+              title="Real files, real portfolio"
+              body="Every step demands a deliverable — a model, an analysis, a memo. Uploaded, stored, downloadable, linkable from your LinkedIn."
+              icon={
+                <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
+                  <rect x="14" y="20" width="28" height="32"
+                        fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
+                  <rect x="11" y="16" width="28" height="32"
+                        fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.7" />
+                  <rect x="8" y="12" width="28" height="32"
+                        fill="var(--color-bg-primary)" stroke="currentColor" strokeWidth="1.5" />
+                  <text x="22" y="32" fontFamily="var(--font-mono)" fontSize="7"
+                        fill="currentColor" textAnchor="middle">.xlsx</text>
+                </svg>
+              }
+            />
+
+            {/* Card 3 — 10 real companies, full models
+                Illustration: 4 abstract company squares in a 2×2 grid with
+                ticker-style codes (representative of the 10 companies). */}
+            <BenefitCard
+              title="10 real companies, full models"
+              body="From Infosys to Tata Motors — ten Indian listed companies. Full 3-statement models, DCFs, comparables. Real numbers, real deliverables."
+              icon={
+                <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
+                  <rect x="6" y="6" width="20" height="20"
+                        fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <text x="16" y="19" fontFamily="var(--font-mono)" fontSize="6"
+                        fill="currentColor" textAnchor="middle">INFY</text>
+                  <rect x="30" y="6" width="20" height="20"
+                        fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <text x="40" y="19" fontFamily="var(--font-mono)" fontSize="6"
+                        fill="currentColor" textAnchor="middle">TCS</text>
+                  <rect x="6" y="30" width="20" height="20"
+                        fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <text x="16" y="43" fontFamily="var(--font-mono)" fontSize="6"
+                        fill="currentColor" textAnchor="middle">RIL</text>
+                  <rect x="30" y="30" width="20" height="20"
+                        fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <text x="40" y="43" fontFamily="var(--font-mono)" fontSize="6"
+                        fill="currentColor" textAnchor="middle">+7</text>
+                </svg>
+              }
+            />
+
+            {/* Card 4 — Deliverable to LinkedIn post
+                Illustration: file icon on left, arrow, post card on right.
+                The arrow indicates the workflow direction. */}
+            <BenefitCard
+              title="Deliverable to LinkedIn post"
+              body="Every completed step generates a LinkedIn post from your actual work — scheduled on a calendar, ready to publish."
+              icon={
+                <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
+                  <rect x="4" y="14" width="16" height="20"
+                        fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <line x1="7" y1="20" x2="17" y2="20"
+                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                  <line x1="7" y1="24" x2="17" y2="24"
+                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                  <line x1="7" y1="28" x2="14" y2="28"
+                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                  <path d="M 24 24 L 32 24 M 28 20 L 32 24 L 28 28"
+                        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+                        strokeLinejoin="round" fill="none" />
+                  <rect x="36" y="14" width="16" height="20"
+                        fill="none" stroke="currentColor" strokeWidth="1.5" />
+                  <circle cx="40" cy="19" r="1.5" fill="currentColor" />
+                  <line x1="44" y1="19" x2="49" y2="19"
+                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                  <line x1="39" y1="25" x2="49" y2="25"
+                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                  <line x1="39" y1="29" x2="46" y2="29"
+                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                </svg>
+              }
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 4 — Audience Filter
+          Two cards side by side: "This is for you if" (green left-border,
+          3 inclusion items) and "This is not for you if" (red left-border,
+          3 exclusion items). Mobile: cards stack vertically.
+
+          The exclusion card is intentional — sending the wrong customer
+          away before they pay is more valuable than persuading them to
+          stay. Brand voice: no exclamation marks, no apologies, no soft
+          language. Each line is a fact, not a feeling.
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="landing-audience" aria-labelledby="audience-heading">
+        <div className="landing-audience-inner">
+          <h2 id="audience-heading" className="landing-audience-heading">
+            Who this is for
+          </h2>
+
+          <div className="landing-audience-grid">
+            {/* LEFT card — inclusion */}
+            <div className="landing-audience-card landing-audience-card--include">
+              <h3 className="landing-audience-card-title">
+                This is for you if
+              </h3>
+              <ul className="landing-audience-list" role="list">
+                <li className="landing-audience-item">
+                  You work in financial data and want to build, not just record
+                </li>
+                <li className="landing-audience-item">
+                  You learn by doing, not by watching
+                </li>
+                <li className="landing-audience-item">
+                  You will spend 6 or more hours a week on this for 4 to 6 months
+                </li>
+              </ul>
+            </div>
+
+            {/* RIGHT card — exclusion */}
+            <div className="landing-audience-card landing-audience-card--exclude">
+              <h3 className="landing-audience-card-title">
+                This is not for you if
+              </h3>
+              <ul className="landing-audience-list" role="list">
+                <li className="landing-audience-item">
+                  You want a certificate, not a portfolio
+                </li>
+                <li className="landing-audience-item">
+                  You expect job placement or guaranteed outcomes
+                </li>
+                <li className="landing-audience-item">
+                  You cannot commit time to building 10 real models
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 5 — 14 Modules (Chat 3)
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="landing-section" aria-label="Modules placeholder">
+        <p className="landing-placeholder-text">SECTION 5 — 14 MODULES</p>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 6 — Proof of work (Chat 3)
+      ─────────────────────────────────────────────────────────────── */}
+      <section
+        className="landing-section"
+        aria-label="Proof of work placeholder"
+      >
+        <p className="landing-placeholder-text">SECTION 6 — PROOF OF WORK</p>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 7 — Pricing (Chat 3)
+          id="pricing" — anchor target for Nav "Get access" button.
+          Smooth scroll is enabled globally via html { scroll-behavior: smooth }
+          in index.css. Anchor works as soon as STEP 2 wires the Nav button.
+      ─────────────────────────────────────────────────────────────── */}
+      <section
+        id="pricing"
+        className="landing-section"
+        aria-label="Pricing placeholder"
+      >
+        <p className="landing-placeholder-text">SECTION 7 — PRICING</p>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 8 — Refund inline note (inside pricing, Chat 3)
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="landing-section" aria-label="Refund note placeholder">
+        <p className="landing-placeholder-text">SECTION 8 — REFUND NOTE</p>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 9 — Trust block (Chat 3)
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="landing-section" aria-label="Trust placeholder">
+        <p className="landing-placeholder-text">SECTION 9 — TRUST</p>
+      </section>
+
+      {/* ───────────────────────────────────────────────────────────────
+          SECTION 10 — Footer (Chat 3)
+      ─────────────────────────────────────────────────────────────── */}
+      <section className="landing-section" aria-label="Footer placeholder">
+        <p className="landing-placeholder-text">SECTION 10 — FOOTER</p>
+      </section>
+    </div>
+  );
+}
+
+export default Landing;

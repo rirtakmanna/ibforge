@@ -1,0 +1,350 @@
+/* src/pages/Landing.css
+ *
+ * Shell layout only — section bodies get their real styling progressively
+ * in STEPs 2–5 (Sections 1–4) and Chat 3 (Sections 5–10).
+ *
+ * The page is shell-less: no Layout wrapper, no sidebar, no bottom dock.
+ * It must work edge-to-edge on its own. The .landing root is therefore
+ * the document scroll container.
+ *
+ * Brand tokens only — zero hex codes per Core Architecture Rules §3.
+ */
+
+.landing {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden; /* hard-block horizontal scroll at 375px */
+}
+
+/* Placeholder section — visible only during STEP 1 → STEP 5 build.
+   Each section's real CSS overrides .landing-section as it lands. */
+.landing-section {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-3xl) var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-placeholder-text {
+  font: var(--text-terminal);
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Mobile (<768px) — tighter horizontal padding per Brand System §Grid System */
+@media (max-width: 767px) {
+  .landing-section {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+    padding-top: var(--space-2xl);
+    padding-bottom: var(--space-2xl);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 2 — HERO
+═══════════════════════════════════════════════════════════════════════ */
+
+.landing-hero {
+  width: 100%;
+  /* Per kickoff: 96px top, 64px bottom */
+  padding: var(--space-4xl) var(--space-xl) var(--space-3xl);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.landing-hero-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* left-anchored — terminal aesthetic */
+  gap: var(--space-2xl);
+}
+
+.landing-hero-headline {
+  margin: 0;
+  /* Brand System: Display = 60px Space Grotesk Bold, line-height 1.0,
+     tracking -0.02em. Token already encodes this. */
+  font: var(--text-display);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-primary);
+  /* Display-token line-height is 1.0; bump slightly for two-line readability */
+  line-height: 1.05;
+  max-width: 18ch; /* keeps headline to its intended 2–3 line shape */
+}
+
+.landing-hero-subhead {
+  margin: 0;
+  font: var(--text-body-lg);
+  color: var(--color-text-secondary);
+  max-width: 56ch; /* readable line length — Brand System rule */
+}
+
+/* ─── Journey arc ──────────────────────────────────────────────────── */
+
+.landing-hero-arc {
+  width: 100%;
+  max-width: 700px;
+  margin: var(--space-md) 0;
+}
+
+.landing-hero-arc svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ─── CTAs ─────────────────────────────────────────────────────────── */
+
+.landing-hero-ctas {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+/* Primary CTA — large variant, matches Brand System Primary Button lg specs */
+.landing-hero-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 40px;
+  background: var(--color-electric-blue);
+  color: #000000;
+  font: var(--text-button);
+  font-size: 16px;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid var(--color-electric-blue);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background-color 150ms linear, transform 80ms linear;
+}
+
+.landing-hero-cta-primary:hover {
+  background: var(--color-electric-blue-hover);
+  border-color: var(--color-electric-blue-hover);
+}
+
+.landing-hero-cta-primary:active {
+  transform: scale(0.97);
+}
+
+.landing-hero-cta-primary:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 4px;
+}
+
+/* Secondary text link — quiet, sits below the primary CTA */
+.landing-hero-cta-secondary {
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 150ms linear, border-color 150ms linear;
+  padding: var(--space-xs) 0;
+}
+
+.landing-hero-cta-secondary:hover {
+  color: var(--color-electric-blue);
+  border-bottom-color: var(--color-electric-blue);
+}
+
+.landing-hero-cta-secondary:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 4px;
+}
+
+/* ─── Hero — mobile (<768px) ───────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .landing-hero {
+    padding: var(--space-3xl) var(--space-md) var(--space-2xl);
+  }
+
+  .landing-hero-inner {
+    gap: var(--space-xl);
+  }
+
+  .landing-hero-headline {
+    /* Display token (60px) is too large at 375px — scale down.
+       Tracking + line-height carry from the parent rule above. */
+    font-size: 36px;
+    max-width: 100%;
+  }
+
+  .landing-hero-subhead {
+    font-size: 15px; /* slightly tighter than body-lg's 16px on mobile */
+  }
+
+  .landing-hero-cta-primary {
+    /* Full width on mobile — single-thumb tappable */
+    width: 100%;
+    padding: 18px 24px;
+    font-size: 14px;
+  }
+
+  /* Center the CTAs on mobile — they're full-width so this is just alignment */
+  .landing-hero-ctas {
+    align-self: stretch;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 3 — BENEFITS (4 graphic cards)
+═══════════════════════════════════════════════════════════════════════ */
+
+.landing-benefits {
+  width: 100%;
+  padding: var(--space-3xl) var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.landing-benefits-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.landing-benefits-heading {
+  margin: 0;
+  font: var(--text-h2);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+/* 2×2 grid on desktop. Cards stretch to equal height via grid auto-rows. */
+.landing-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-lg);
+}
+
+/* ─── Mobile (<768px) — single column ──────────────────────────────── */
+
+@media (max-width: 767px) {
+  .landing-benefits {
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .landing-benefits-inner {
+    gap: var(--space-xl);
+  }
+
+  .landing-benefits-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 4 — AUDIENCE FILTER (for-you / not-for-you)
+═══════════════════════════════════════════════════════════════════════ */
+
+.landing-audience {
+  width: 100%;
+  padding: var(--space-3xl) var(--space-xl);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.landing-audience-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+.landing-audience-heading {
+  margin: 0;
+  font: var(--text-h2);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+/* Two equal-width cards side by side */
+.landing-audience-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+}
+
+/* ─── Card base ────────────────────────────────────────────────────── */
+
+.landing-audience-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Modifier — inclusion card: green left border, 3px */
+.landing-audience-card--include {
+  border-left: 3px solid var(--color-success-green);
+}
+
+/* Modifier — exclusion card: red left border, 3px */
+.landing-audience-card--exclude {
+  border-left: 3px solid var(--color-error-red);
+}
+
+.landing-audience-card-title {
+  margin: 0;
+  font: var(--text-h3);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+/* ─── List + items ─────────────────────────────────────────────────── */
+
+.landing-audience-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.landing-audience-item {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* ─── Mobile (<768px) — stack cards vertically ─────────────────────── */
+
+@media (max-width: 767px) {
+  .landing-audience {
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .landing-audience-inner {
+    gap: var(--space-xl);
+  }
+
+  .landing-audience-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .landing-audience-card {
+    padding: var(--space-lg);
+  }
+}
