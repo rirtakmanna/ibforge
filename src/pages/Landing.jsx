@@ -355,6 +355,58 @@ const moduleStaticVariants = {
   visible: { opacity: 1, scale: 1, y: 0 },
 };
 
+// ─────────────────────────────────────────────────────────────────
+// SECTION 6 — Proof of Work: data + variants
+// Three real screenshots of the live app, served from /public/landing/.
+// Sequencing: StepDetail → Portfolio → Calendar — shows the execution
+// loop: a locked step is completed, the deliverable lands in Portfolio,
+// the LinkedIn post auto-schedules on Calendar. Each card carries one
+// caption — no hover state per kickoff spec.
+//
+// Swap targets later (when DCF / 3-statement models exist): edit only
+// the `src` and `caption` fields in this constant. No JSX changes.
+// ─────────────────────────────────────────────────────────────────
+const landingProof = [
+  {
+    src: "/landing/03-step-detail.png",
+    alt: "ATLAS Step Detail page showing M4-S37 active with Topic, Open Course, and Mark Complete controls",
+    caption: "A locked step, a real deliverable, a real upload.",
+  },
+  {
+    src: "/landing/04-portfolio.png",
+    alt: "ATLAS Portfolio page showing ITC Limited Trading Comps Workbook deliverable in Module 4",
+    caption: "Every uploaded file, organised by step.",
+  },
+  {
+    src: "/landing/05-calendar.png",
+    alt: "ATLAS Calendar page showing scheduled LinkedIn posts on May 2026",
+    caption: "LinkedIn posts scheduled the day you finish.",
+  },
+];
+
+// Section 6 grid orchestrator — 100ms stagger between the 3 cards,
+// 100ms delayChildren so children begin AFTER the section's own lift settles.
+const proofGridVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+// Each proof card — scale 0.96 → 1.0 + fade, 300ms ease-out per kickoff spec.
+// No hover animation (per kickoff: "No hover animation").
+const proofCardVariants = {
+  hidden: { opacity: 0, scale: 0.96 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.3, ease: [0, 0, 0.2, 1] },
+  },
+};
+
 function Landing() {
   // prefers-reduced-motion: swap animated variants for static end-state.
   // The hook returns true when the OS-level setting is enabled. We compute
@@ -954,14 +1006,73 @@ function Landing() {
       </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
-          SECTION 6 — Proof of work (Chat 3)
+          SECTION 6 — Proof of Work (Chat 5)
+          Three real screenshots of the live app — proves the system
+          works before the customer pays. Loop shown: StepDetail (lock
+          + deliverable spec + Mark Complete) → Portfolio (uploaded
+          file lands here, organised by step) → Calendar (LinkedIn
+          post auto-schedules on completion).
+
+          Section wrapper reveals as a unit. Inner grid stagger-cascades
+          3 cards at 100ms intervals, each card scale 0.96 → 1.0 + fade
+          over 300ms ease-out per kickoff. No hover animation.
+
+          Screenshots served from /public/landing/ — direct path, no
+          import. Operator can swap to DCF / 3-statement model
+          screenshots later via single src + caption edits.
       ─────────────────────────────────────────────────────────────── */}
-      <section
-        className="landing-section"
-        aria-label="Proof of work placeholder"
+      <motion.section
+        className="landing-section landing-proof-section"
+        aria-labelledby="landing-proof-heading"
+        variants={revealVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={revealViewport}
       >
-        <p className="landing-placeholder-text">SECTION 6 — PROOF OF WORK</p>
-      </section>
+        <div className="landing-proof-inner">
+          <header className="landing-proof-header">
+            <p className="landing-proof-eyebrow">Proof of work</p>
+            <h2 id="landing-proof-heading" className="landing-proof-heading">
+              The system, running.
+            </h2>
+            <p className="landing-proof-sub">
+              Screenshots from the live app. Every locked step, every
+              uploaded file, every scheduled post — exactly what the
+              product produces when you complete a module.
+            </p>
+          </header>
+
+          <motion.ul
+            className="landing-proof-grid"
+            role="list"
+            variants={prefersReducedMotion ? moduleStaticVariants : proofGridVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={revealViewport}
+          >
+            {landingProof.map((card) => (
+              <motion.li
+                key={card.src}
+                className="landing-proof-card"
+                variants={
+                  prefersReducedMotion ? moduleStaticVariants : proofCardVariants
+                }
+              >
+                <div className="landing-proof-image-wrap">
+                  <img
+                    className="landing-proof-image"
+                    src={card.src}
+                    alt={card.alt}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <p className="landing-proof-caption">{card.caption}</p>
+              </motion.li>
+            ))}
+          </motion.ul>
+        </div>
+      </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
           SECTION 7 — Pricing (Chat 3)
