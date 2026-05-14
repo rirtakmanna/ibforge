@@ -469,6 +469,40 @@ const trialAccordionVariants = {
   expanded: { height: "auto", opacity: 1, transition: { duration: 0.25, ease: [0, 0, 0.2, 1] } },
 };
 
+// ─────────────────────────────────────────────────────────────────
+// SECTION 9 — Trust block: variants
+// Per kickoff: "Stagger 100ms, left first." Two-column reveal where
+// the founder card (left) leads and the links column (right) follows
+// 100ms later. Both fade + 6px lift, 250ms ease-out — matches the
+// pricing card pattern for visual consistency between two-column
+// sections (pricing → trust both pair-reveal the same way).
+//
+// Grid orchestrator: 100ms staggerChildren, 100ms delayChildren so
+// children begin AFTER the parent section's lift has settled.
+// ─────────────────────────────────────────────────────────────────
+const trustGridVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+// Each column — founder card and links column share this variant.
+// JSX order in the DOM determines which is "left first" — founder
+// card sits first, gets the lead reveal. Lift smaller (6px) than the
+// section's own lift (8px) to feel like settling-in, not reassertion.
+const trustColumnVariants = {
+  hidden: { opacity: 0, y: 6 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: [0, 0, 0.2, 1] },
+  },
+};
+
 function Landing() {
   // prefers-reduced-motion: swap animated variants for static end-state.
   // The hook returns true when the OS-level setting is enabled. We compute
@@ -1427,11 +1461,121 @@ function Landing() {
       </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
-          SECTION 9 — Trust block (Chat 3)
+          SECTION 9 — Trust block (Chat 6)
+          Two columns desktop, stacked mobile. Founder card (left) carries
+          the locked bio + contact line per kickoff. Links column (right)
+          carries the 4 routing/anchor links — Privacy, Terms, Refund,
+          and a "Module 1 Trial" anchor that scrolls back to #pricing.
+
+          Stagger 100ms, left first — handled by trustGridVariants at
+          module scope. Both columns share trustColumnVariants (fade +
+          6px lift, 250ms ease-out). DOM order = visual order = reveal
+          order: founder card first, links column second.
+
+          The section is intentionally quiet — no accent borders, no
+          colored highlights. Trust is the rest beat between the
+          commercial press of pricing and the closing footer wordmark.
       ─────────────────────────────────────────────────────────────── */}
-      <section className="landing-section" aria-label="Trust placeholder">
-        <p className="landing-placeholder-text">SECTION 9 — TRUST</p>
-      </section>
+      <motion.section
+        className="landing-section landing-trust-section"
+        aria-labelledby="landing-trust-heading"
+        variants={revealVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={revealViewport}
+      >
+        <div className="landing-trust-inner">
+          <header className="landing-trust-header">
+            <p className="landing-trust-eyebrow">Who built this</p>
+            <h2 id="landing-trust-heading" className="landing-trust-heading">
+              Built by someone walking the same path.
+            </h2>
+          </header>
+
+          <motion.div
+            className="landing-trust-grid"
+            variants={prefersReducedMotion ? moduleStaticVariants : trustGridVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={revealViewport}
+          >
+            {/* ─── LEFT — Founder card ─────────────────────────────
+                Locked bio copy per kickoff. Contact line is a mailto
+                link to hello@ibforge.in — opens the user's email client
+                with the From-line pre-populated. */}
+            <motion.article
+              className="landing-trust-card landing-trust-card--founder"
+              variants={prefersReducedMotion ? moduleStaticVariants : trustColumnVariants}
+              aria-labelledby="founder-card-heading"
+            >
+              <h3 id="founder-card-heading" className="landing-trust-card-title">
+                Rirtak Manna
+              </h3>
+              <p className="landing-trust-card-role">
+                IB Professional · MBA Financial Management, NMIMS
+              </p>
+              <p className="landing-trust-card-body">
+                I build IBForge because I&apos;m on this exact path
+                myself — from financial data work to real Investment
+                Banking — and I needed a structure that actually produced
+                models, not certificates. At my previous firm I structured historical financials for listed companies; that work taught me what an IB analyst&apos;s desk actually looks like. The roadmap
+                inside IBForge is the one I&apos;m walking.
+              </p>
+              <p className="landing-trust-card-contact-row">
+                <span className="landing-trust-card-contact-label">Contact</span>
+                <a
+                  href="mailto:hello@ibforge.in"
+                  className="landing-trust-card-contact-link"
+                >
+                  hello@ibforge.in
+                </a>
+              </p>
+            </motion.article>
+
+            {/* ─── RIGHT — Links column ────────────────────────────
+                Four anchor + route links. Privacy / Terms / Refund are
+                separate public routes built in Step 7 (next). Module 1
+                Trial is an in-page anchor to #pricing — same target as
+                the Hero CTAs and Nav "Get access" button.
+
+                Each link is a single line, semantic <a>, electric-blue
+                on hover. JetBrains Mono caption label sits above the
+                list to mark this as a navigation column, not a content
+                column. */}
+            <motion.div
+              className="landing-trust-links"
+              variants={prefersReducedMotion ? moduleStaticVariants : trustColumnVariants}
+              aria-labelledby="trust-links-heading"
+            >
+              <p id="trust-links-heading" className="landing-trust-links-label">
+                Reference
+              </p>
+              <ul className="landing-trust-links-list" role="list">
+                <li className="landing-trust-links-item">
+                  <a className="landing-trust-link" href="/privacy">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li className="landing-trust-links-item">
+                  <a className="landing-trust-link" href="/terms">
+                    Terms of Service
+                  </a>
+                </li>
+                <li className="landing-trust-links-item">
+                  <a className="landing-trust-link" href="/refund">
+                    Refund Policy
+                  </a>
+                </li>
+                <li className="landing-trust-links-item">
+                  <a className="landing-trust-link" href="#pricing">
+                    Module 1 Trial
+                  </a>
+                </li>
+              </ul>
+            </motion.div>
+          </motion.div>
+        </div>
+      </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
           SECTION 10 — Footer (Chat 3)

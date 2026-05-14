@@ -1338,3 +1338,234 @@
     line-height: 1.55;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 9 — TRUST BLOCK (Chat 6)
+   Two-column layout — founder card (left) + reference links (right).
+   Stagger 100ms, left first — handled by Framer Motion in Landing.jsx
+   via trustGridVariants. This CSS owns layout, card chassis, link
+   styling, and the mobile stack.
+
+   Intentionally quiet: no accent borders, no colored backgrounds, no
+   special emphasis. Trust is the rest beat between pricing's commercial
+   press and the closing footer wordmark — visual weight stays with the
+   content (the bio + the links), not the chrome.
+═══════════════════════════════════════════════════════════════════════ */
+
+.landing-trust-section {
+  /* Override .landing-section's placeholder flex centering — full
+     content flow inside .landing-trust-inner. Section padding +
+     border-bottom inherit from .landing-section. */
+  display: block;
+  min-height: 0;
+  padding: var(--space-3xl) var(--space-xl);
+}
+
+.landing-trust-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+/* ─── Section header ──────────────────────────────────────────────── */
+
+.landing-trust-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 56ch;
+}
+
+.landing-trust-eyebrow {
+  margin: 0;
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-electric-blue);
+}
+
+.landing-trust-heading {
+  margin: 0;
+  font: var(--text-h2);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+/* ─── Two-column grid ─────────────────────────────────────────────── */
+
+/* Asymmetric column ratio — founder card is the content beat, links
+   column is a small reference index. 2fr / 1fr keeps the bio readable
+   at desktop widths without letting the links column collapse to a
+   single-column-of-words. Mobile stacks both at 1fr. */
+.landing-trust-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+/* ─── Founder card (left column) ──────────────────────────────────── */
+
+.landing-trust-card {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.landing-trust-card-title {
+  margin: 0;
+  font: var(--text-h3);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+/* Role line — sits hard under the name, tighter spacing than the body */
+.landing-trust-card-role {
+  margin: 0;
+  font: var(--text-data);
+  font-size: 13px;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-electric-blue);
+}
+
+.landing-trust-card-body {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  /* Bio is denser than a sub-headline — let it run slightly wider for
+     reading comfort. The card's max-width is already constrained by
+     the 2fr grid column. */
+  max-width: 64ch;
+}
+
+/* Contact row — small caps label + mailto link on the same baseline */
+.landing-trust-card-contact-row {
+  margin: var(--space-sm) 0 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+
+.landing-trust-card-contact-label {
+  font: var(--text-micro);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-text-disabled);
+}
+
+.landing-trust-card-contact-link {
+  font: var(--text-data);
+  font-size: 14px;
+  color: var(--color-electric-blue);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 150ms linear;
+}
+
+.landing-trust-card-contact-link:hover {
+  border-bottom-color: var(--color-electric-blue);
+}
+
+.landing-trust-card-contact-link:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 3px;
+}
+
+/* ─── Links column (right column) ─────────────────────────────────── */
+
+.landing-trust-links {
+  /* No card chassis — links column reads as a quiet reference index,
+     not a second content card. Just stacked links with a caption
+     label above. Sits flush with the founder card's top edge via
+     the grid's align-items: start. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  /* Inner padding matches the founder card's vertical padding so
+     the label and the founder card title sit on the same baseline. */
+  padding-top: var(--space-xl);
+}
+
+.landing-trust-links-label {
+  margin: 0;
+  font: var(--text-micro);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-text-disabled);
+}
+
+.landing-trust-links-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.landing-trust-links-item {
+  margin: 0;
+}
+
+.landing-trust-link {
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 150ms linear, border-color 150ms linear;
+  /* Inline-block so the bottom border only spans the text width, not
+     the full row. */
+  display: inline-block;
+}
+
+.landing-trust-link:hover {
+  color: var(--color-electric-blue);
+  border-bottom-color: var(--color-electric-blue);
+}
+
+.landing-trust-link:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 3px;
+}
+
+/* ─── Mobile (<768px) — stack columns vertically ──────────────────── */
+
+@media (max-width: 767px) {
+  .landing-trust-section {
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .landing-trust-inner {
+    gap: var(--space-xl);
+  }
+
+  .landing-trust-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+
+  .landing-trust-card {
+    padding: var(--space-lg);
+  }
+
+  .landing-trust-card-body {
+    /* Let the bio fill the mobile container — no 64ch cap at narrow
+       viewports (cap creates awkward 1–2 word wrap on small screens). */
+    max-width: 100%;
+    line-height: 1.55;
+  }
+
+  .landing-trust-links {
+    /* Drop the desktop top-padding alignment on mobile — when stacked,
+       the links column sits naturally below the card, no baseline match
+       needed. */
+    padding-top: 0;
+  }
+}
