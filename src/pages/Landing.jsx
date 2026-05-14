@@ -373,7 +373,13 @@ function Landing() {
           >
             {/* Card 1 — Locked step sequence
                 Illustration: vertical step chain, one active (filled) dot,
-                two locked (outlined) dots. Reinforces the sequence lock. */}
+                two locked (outlined) dots. Reinforces the sequence lock.
+
+                STEP 5.5 STEP 3 (Override 8 — decorative idle): the active
+                (topmost, filled) dot pulses subtly. scale 1.0 → 1.15 → 1.0,
+                2.0s loop, repeat infinite. The two locked dots stay static.
+                transformOrigin is set to the circle's center so the scale
+                grows in place rather than from the SVG origin. */}
             <motion.div variants={cardItemVariants} className="landing-benefit-card-wrap">
               <BenefitCard
                 title="Locked step sequence"
@@ -382,8 +388,17 @@ function Landing() {
                   <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
                     <line x1="28" y1="10" x2="28" y2="46"
                           stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 3" />
-                    <circle cx="28" cy="12" r="6"
-                            fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
+                    <motion.circle
+                      cx="28" cy="12" r="6"
+                      fill="currentColor" stroke="currentColor" strokeWidth="1.5"
+                      style={{ transformOrigin: "28px 12px", transformBox: "fill-box" }}
+                      animate={prefersReducedMotion ? { scale: 1 } : { scale: [1, 1.15, 1] }}
+                      transition={
+                        prefersReducedMotion
+                          ? { duration: 0 }
+                          : { duration: 2.0, ease: [0.4, 0, 0.6, 1], repeat: Infinity, repeatType: "loop" }
+                      }
+                    />
                     <circle cx="28" cy="28" r="6"
                             fill="none" stroke="currentColor" strokeWidth="1.5" />
                     <circle cx="28" cy="44" r="6"
@@ -395,7 +410,13 @@ function Landing() {
 
             {/* Card 2 — Real files, real portfolio
                 Illustration: 3 stacked file rectangles with ".xlsx" label
-                on the topmost. Suggests a deliverable archive. */}
+                on the topmost. Suggests a deliverable archive.
+
+                STEP 5.5 STEP 3 (Override 8 — decorative idle): the topmost
+                file (with the .xlsx label) drifts y 0 → -1.5 → 0 over 3.0s,
+                repeat infinite. The label is grouped with the rect via
+                motion.g so they move together as a single visual unit.
+                Two underlying files stay static. */}
             <motion.div variants={cardItemVariants} className="landing-benefit-card-wrap">
               <BenefitCard
                 title="Real files, real portfolio"
@@ -406,10 +427,19 @@ function Landing() {
                           fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
                     <rect x="11" y="16" width="28" height="32"
                           fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.7" />
-                    <rect x="8" y="12" width="28" height="32"
-                          fill="var(--color-bg-primary)" stroke="currentColor" strokeWidth="1.5" />
-                    <text x="22" y="32" fontFamily="var(--font-mono)" fontSize="7"
-                          fill="currentColor" textAnchor="middle">.xlsx</text>
+                    <motion.g
+                      animate={prefersReducedMotion ? { y: 0 } : { y: [0, -1.5, 0] }}
+                      transition={
+                        prefersReducedMotion
+                          ? { duration: 0 }
+                          : { duration: 3.0, ease: [0.4, 0, 0.6, 1], repeat: Infinity, repeatType: "loop" }
+                      }
+                    >
+                      <rect x="8" y="12" width="28" height="32"
+                            fill="var(--color-bg-primary)" stroke="currentColor" strokeWidth="1.5" />
+                      <text x="22" y="32" fontFamily="var(--font-mono)" fontSize="7"
+                            fill="currentColor" textAnchor="middle">.xlsx</text>
+                    </motion.g>
                   </svg>
                 }
               />
@@ -417,7 +447,13 @@ function Landing() {
 
             {/* Card 3 — 10 real companies, full models
                 Illustration: 4 abstract company squares in a 2×2 grid with
-                ticker-style codes (representative of the 10 companies). */}
+                ticker-style codes (representative of the 10 companies).
+
+                STEP 5.5 STEP 3 (Override 8 — decorative idle): the +7
+                square (bottom-right, x=30 y=30) pulses its stroke-opacity
+                1.0 → 0.5 → 1.0 over 2.5s, repeat infinite. INFY, TCS, RIL
+                squares stay static. Only the stroke (border) pulses — the
+                label text stays fully opaque. */}
             <motion.div variants={cardItemVariants} className="landing-benefit-card-wrap">
               <BenefitCard
                 title="10 real companies, full models"
@@ -436,8 +472,17 @@ function Landing() {
                           fill="none" stroke="currentColor" strokeWidth="1.5" />
                     <text x="16" y="43" fontFamily="var(--font-mono)" fontSize="6"
                           fill="currentColor" textAnchor="middle">RIL</text>
-                    <rect x="30" y="30" width="20" height="20"
-                          fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <motion.rect
+                      x="30" y="30" width="20" height="20"
+                      fill="none" stroke="currentColor" strokeWidth="1.5"
+                      initial={{ strokeOpacity: 1 }}
+                      animate={prefersReducedMotion ? { strokeOpacity: 1 } : { strokeOpacity: [1, 0.5, 1] }}
+                      transition={
+                        prefersReducedMotion
+                          ? { duration: 0 }
+                          : { duration: 2.5, ease: [0.4, 0, 0.6, 1], repeat: Infinity, repeatType: "loop" }
+                      }
+                    />
                     <text x="40" y="43" fontFamily="var(--font-mono)" fontSize="6"
                           fill="currentColor" textAnchor="middle">+7</text>
                   </svg>
@@ -447,7 +492,14 @@ function Landing() {
 
             {/* Card 4 — Deliverable to LinkedIn post
                 Illustration: file icon on left, arrow, post card on right.
-                The arrow indicates the workflow direction. */}
+                The arrow indicates the workflow direction.
+
+                STEP 5.5 STEP 3 (Override 8 — decorative idle): the arrow
+                connecting the file to the post card drifts x 0 → 1.5 → 0
+                over 2.5s, repeat infinite. The arrow is built from one
+                path (shaft + head). File icon and LinkedIn post card stay
+                static. Direction: rightward drift then return — matches
+                the arrow's pointing direction. */}
             <motion.div variants={cardItemVariants} className="landing-benefit-card-wrap">
               <BenefitCard
                 title="Deliverable to LinkedIn post"
@@ -462,9 +514,17 @@ function Landing() {
                           stroke="currentColor" strokeWidth="1" opacity="0.6" />
                     <line x1="7" y1="28" x2="14" y2="28"
                           stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                    <path d="M 24 24 L 32 24 M 28 20 L 32 24 L 28 28"
-                          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-                          strokeLinejoin="round" fill="none" />
+                    <motion.path
+                      d="M 24 24 L 32 24 M 28 20 L 32 24 L 28 28"
+                      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+                      strokeLinejoin="round" fill="none"
+                      animate={prefersReducedMotion ? { x: 0 } : { x: [0, 1.5, 0] }}
+                      transition={
+                        prefersReducedMotion
+                          ? { duration: 0 }
+                          : { duration: 2.5, ease: [0.4, 0, 0.6, 1], repeat: Infinity, repeatType: "loop" }
+                      }
+                    />
                     <rect x="36" y="14" width="16" height="20"
                           fill="none" stroke="currentColor" strokeWidth="1.5" />
                     <circle cx="40" cy="19" r="1.5" fill="currentColor" />
