@@ -21,11 +21,79 @@
 //   No exclamation marks. No emoji. No congratulatory language.
 //   Short sentences. Active voice. State facts not feelings.
 
+import { motion, useReducedMotion } from "framer-motion";
 import LandingNav from "@/components/landing/LandingNav";
 import BenefitCard from "@/components/landing/BenefitCard";
 import "./Landing.css";
 
+// ───────────────────────────────────────────────────────────────
+// SCROLL-REVEAL VARIANTS (Step 5.5 STEP 1)
+// Applied to Sections 2, 3, 4. Section 1 (Nav) is sticky-always —
+// no reveal. Sections 5–10 are placeholders, rebuilt in Step 6
+// with their own animation baked in.
+//
+// Pattern: fade in (opacity 0 → 1) + 8px lift (y: 8 → 0).
+// Easing: [0, 0, 0.2, 1] — Brand System exit-ease, matches modal entrance.
+// Trigger: viewport once:true, margin "-10% 0px" (fires 10% before section enters).
+// ─────────────────────────────────────────────────────────────── */
+const sectionRevealVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0, 0, 0.2, 1] },
+  },
+};
+
+// Section 3 (Benefits) gets staggered children — grid items reveal in
+// sequence at 60ms intervals AFTER the parent section's 8px lift completes.
+// delayChildren = 0.4s matches the parent transition duration above, so
+// children begin revealing only when the parent has settled.
+const benefitsGridVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: [0, 0, 0.2, 1],
+      delayChildren: 0.4,
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+// Each benefit card item — fades in + 6px lift, 250ms ease-out.
+// Lift smaller than the section's 8px to feel like it "settles into"
+// the already-revealed parent rather than reasserting itself.
+const benefitCardItemVariants = {
+  hidden: { opacity: 0, y: 6 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.25, ease: [0, 0, 0.2, 1] },
+  },
+};
+
+// Reduced-motion variants — instant final state, no movement, no fade.
+// Swapped in via useReducedMotion() hook inside the component.
+const staticVariants = {
+  hidden: { opacity: 1, y: 0 },
+  visible: { opacity: 1, y: 0 },
+};
+
 function Landing() {
+  // prefers-reduced-motion: swap animated variants for static end-state.
+  // The hook returns true when the OS-level setting is enabled. We compute
+  // the active variant maps ONCE per render — no per-section ternaries.
+  const prefersReducedMotion = useReducedMotion();
+  const revealVariants = prefersReducedMotion ? staticVariants : sectionRevealVariants;
+  const gridVariants = prefersReducedMotion ? staticVariants : benefitsGridVariants;
+  const cardItemVariants = prefersReducedMotion ? staticVariants : benefitCardItemVariants;
+
+  // Shared viewport config — fires 10% before section enters, single-fire.
+  const revealViewport = { once: true, margin: "-10% 0px" };
+
   return (
     <div className="landing">
       {/* ───────────────────────────────────────────────────────────────
@@ -39,8 +107,20 @@ function Landing() {
           rules: no exclamation marks, no emoji, short sentences. The line
           break inside the headline is intentional — the second line is the
           "what" beat, set apart visually.
+
+          STEP 5.5 STEP 1: Section wrapper swapped to motion.section with
+          fade + 8px lift on scroll-into-view. Inner content (headline, arc,
+          CTAs) is unchanged — the reveal applies to the section as a single
+          unit. The journey arc draw-on-scroll comes in STEP 2 (sub-step B).
       ─────────────────────────────────────────────────────────────── */}
-      <section className="landing-hero" aria-labelledby="hero-headline">
+      <motion.section
+        className="landing-hero"
+        aria-labelledby="hero-headline"
+        initial="hidden"
+        whileInView="visible"
+        viewport={revealViewport}
+        variants={revealVariants}
+      >
         <div className="landing-hero-inner">
           <h1 id="hero-headline" className="landing-hero-headline">
             Not a course.
@@ -147,7 +227,7 @@ function Landing() {
             </a>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
           SECTION 3 — Benefits
@@ -156,116 +236,145 @@ function Landing() {
           Hover: Logo Card Hover State (tint + scaling bottom bar).
           SVG icons inlined below — kept here (not in BenefitCard) so all
           four illustrations live in one file for visual review.
+
+          STEP 5.5 STEP 1: Section wrapper reveals as a unit. The inner grid
+          uses benefitsGridVariants — its own parent reveal duplicates the
+          section's reveal pattern, plus delayChildren:0.4 + staggerChildren:0.06
+          to orchestrate the 4 cards in sequence AFTER the parent has settled.
+          Each card is wrapped in motion.div with cardItemVariants — they
+          inherit "visible" from the parent grid through Framer Motion's
+          variant propagation, so no per-card animate prop is needed.
       ─────────────────────────────────────────────────────────────── */}
-      <section className="landing-benefits" aria-labelledby="benefits-heading">
+      <motion.section
+        className="landing-benefits"
+        aria-labelledby="benefits-heading"
+        initial="hidden"
+        whileInView="visible"
+        viewport={revealViewport}
+        variants={revealVariants}
+      >
         <div className="landing-benefits-inner">
           <h2 id="benefits-heading" className="landing-benefits-heading">
             What you actually get
           </h2>
 
-          <div className="landing-benefits-grid">
+          <motion.div
+            className="landing-benefits-grid"
+            initial="hidden"
+            whileInView="visible"
+            viewport={revealViewport}
+            variants={gridVariants}
+          >
             {/* Card 1 — Locked step sequence
                 Illustration: vertical step chain, one active (filled) dot,
                 two locked (outlined) dots. Reinforces the sequence lock. */}
-            <BenefitCard
-              title="Locked step sequence"
-              body="Each step unlocks only when the previous step is complete and its deliverable is uploaded. No skipping."
-              icon={
-                <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
-                  <line x1="28" y1="10" x2="28" y2="46"
-                        stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 3" />
-                  <circle cx="28" cy="12" r="6"
-                          fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
-                  <circle cx="28" cy="28" r="6"
-                          fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  <circle cx="28" cy="44" r="6"
-                          fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
-                </svg>
-              }
-            />
+            <motion.div variants={cardItemVariants} className="landing-benefit-card-wrap">
+              <BenefitCard
+                title="Locked step sequence"
+                body="Each step unlocks only when the previous step is complete and its deliverable is uploaded. No skipping."
+                icon={
+                  <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
+                    <line x1="28" y1="10" x2="28" y2="46"
+                          stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 3" />
+                    <circle cx="28" cy="12" r="6"
+                            fill="currentColor" stroke="currentColor" strokeWidth="1.5" />
+                    <circle cx="28" cy="28" r="6"
+                            fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <circle cx="28" cy="44" r="6"
+                            fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
+                  </svg>
+                }
+              />
+            </motion.div>
 
             {/* Card 2 — Real files, real portfolio
                 Illustration: 3 stacked file rectangles with ".xlsx" label
                 on the topmost. Suggests a deliverable archive. */}
-            <BenefitCard
-              title="Real files, real portfolio"
-              body="Every step demands a deliverable — a model, an analysis, a memo. Uploaded, stored, downloadable, linkable from your LinkedIn."
-              icon={
-                <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
-                  <rect x="14" y="20" width="28" height="32"
-                        fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
-                  <rect x="11" y="16" width="28" height="32"
-                        fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.7" />
-                  <rect x="8" y="12" width="28" height="32"
-                        fill="var(--color-bg-primary)" stroke="currentColor" strokeWidth="1.5" />
-                  <text x="22" y="32" fontFamily="var(--font-mono)" fontSize="7"
-                        fill="currentColor" textAnchor="middle">.xlsx</text>
-                </svg>
-              }
-            />
+            <motion.div variants={cardItemVariants} className="landing-benefit-card-wrap">
+              <BenefitCard
+                title="Real files, real portfolio"
+                body="Every step demands a deliverable — a model, an analysis, a memo. Uploaded, stored, downloadable, linkable from your LinkedIn."
+                icon={
+                  <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
+                    <rect x="14" y="20" width="28" height="32"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.4" />
+                    <rect x="11" y="16" width="28" height="32"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.7" />
+                    <rect x="8" y="12" width="28" height="32"
+                          fill="var(--color-bg-primary)" stroke="currentColor" strokeWidth="1.5" />
+                    <text x="22" y="32" fontFamily="var(--font-mono)" fontSize="7"
+                          fill="currentColor" textAnchor="middle">.xlsx</text>
+                  </svg>
+                }
+              />
+            </motion.div>
 
             {/* Card 3 — 10 real companies, full models
                 Illustration: 4 abstract company squares in a 2×2 grid with
                 ticker-style codes (representative of the 10 companies). */}
-            <BenefitCard
-              title="10 real companies, full models"
-              body="From Infosys to Tata Motors — ten Indian listed companies. Full 3-statement models, DCFs, comparables. Real numbers, real deliverables."
-              icon={
-                <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
-                  <rect x="6" y="6" width="20" height="20"
-                        fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  <text x="16" y="19" fontFamily="var(--font-mono)" fontSize="6"
-                        fill="currentColor" textAnchor="middle">INFY</text>
-                  <rect x="30" y="6" width="20" height="20"
-                        fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  <text x="40" y="19" fontFamily="var(--font-mono)" fontSize="6"
-                        fill="currentColor" textAnchor="middle">TCS</text>
-                  <rect x="6" y="30" width="20" height="20"
-                        fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  <text x="16" y="43" fontFamily="var(--font-mono)" fontSize="6"
-                        fill="currentColor" textAnchor="middle">RIL</text>
-                  <rect x="30" y="30" width="20" height="20"
-                        fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  <text x="40" y="43" fontFamily="var(--font-mono)" fontSize="6"
-                        fill="currentColor" textAnchor="middle">+7</text>
-                </svg>
-              }
-            />
+            <motion.div variants={cardItemVariants} className="landing-benefit-card-wrap">
+              <BenefitCard
+                title="10 real companies, full models"
+                body="From Infosys to Tata Motors — ten Indian listed companies. Full 3-statement models, DCFs, comparables. Real numbers, real deliverables."
+                icon={
+                  <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
+                    <rect x="6" y="6" width="20" height="20"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <text x="16" y="19" fontFamily="var(--font-mono)" fontSize="6"
+                          fill="currentColor" textAnchor="middle">INFY</text>
+                    <rect x="30" y="6" width="20" height="20"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <text x="40" y="19" fontFamily="var(--font-mono)" fontSize="6"
+                          fill="currentColor" textAnchor="middle">TCS</text>
+                    <rect x="6" y="30" width="20" height="20"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <text x="16" y="43" fontFamily="var(--font-mono)" fontSize="6"
+                          fill="currentColor" textAnchor="middle">RIL</text>
+                    <rect x="30" y="30" width="20" height="20"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <text x="40" y="43" fontFamily="var(--font-mono)" fontSize="6"
+                          fill="currentColor" textAnchor="middle">+7</text>
+                  </svg>
+                }
+              />
+            </motion.div>
 
             {/* Card 4 — Deliverable to LinkedIn post
                 Illustration: file icon on left, arrow, post card on right.
                 The arrow indicates the workflow direction. */}
-            <BenefitCard
-              title="Deliverable to LinkedIn post"
-              body="Every completed step generates a LinkedIn post from your actual work — scheduled on a calendar, ready to publish."
-              icon={
-                <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
-                  <rect x="4" y="14" width="16" height="20"
-                        fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  <line x1="7" y1="20" x2="17" y2="20"
-                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                  <line x1="7" y1="24" x2="17" y2="24"
-                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                  <line x1="7" y1="28" x2="14" y2="28"
-                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                  <path d="M 24 24 L 32 24 M 28 20 L 32 24 L 28 28"
-                        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-                        strokeLinejoin="round" fill="none" />
-                  <rect x="36" y="14" width="16" height="20"
-                        fill="none" stroke="currentColor" strokeWidth="1.5" />
-                  <circle cx="40" cy="19" r="1.5" fill="currentColor" />
-                  <line x1="44" y1="19" x2="49" y2="19"
-                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                  <line x1="39" y1="25" x2="49" y2="25"
-                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                  <line x1="39" y1="29" x2="46" y2="29"
-                        stroke="currentColor" strokeWidth="1" opacity="0.6" />
-                </svg>
-              }
-            />
-          </div>
+            <motion.div variants={cardItemVariants} className="landing-benefit-card-wrap">
+              <BenefitCard
+                title="Deliverable to LinkedIn post"
+                body="Every completed step generates a LinkedIn post from your actual work — scheduled on a calendar, ready to publish."
+                icon={
+                  <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" fill="none">
+                    <rect x="4" y="14" width="16" height="20"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <line x1="7" y1="20" x2="17" y2="20"
+                          stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                    <line x1="7" y1="24" x2="17" y2="24"
+                          stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                    <line x1="7" y1="28" x2="14" y2="28"
+                          stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                    <path d="M 24 24 L 32 24 M 28 20 L 32 24 L 28 28"
+                          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+                          strokeLinejoin="round" fill="none" />
+                    <rect x="36" y="14" width="16" height="20"
+                          fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <circle cx="40" cy="19" r="1.5" fill="currentColor" />
+                    <line x1="44" y1="19" x2="49" y2="19"
+                          stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                    <line x1="39" y1="25" x2="49" y2="25"
+                          stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                    <line x1="39" y1="29" x2="46" y2="29"
+                          stroke="currentColor" strokeWidth="1" opacity="0.6" />
+                  </svg>
+                }
+              />
+            </motion.div>
+          </motion.div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
           SECTION 4 — Audience Filter
@@ -277,8 +386,20 @@ function Landing() {
           away before they pay is more valuable than persuading them to
           stay. Brand voice: no exclamation marks, no apologies, no soft
           language. Each line is a fact, not a feeling.
+
+          STEP 5.5 STEP 1: Section wrapper reveals as a unit. Per scope, the
+          two cards stagger by 80ms on their border draw-down — but that is
+          STEP 4 (sub-step D), not STEP 1. STEP 1 reveals both cards
+          together with the section's single lift.
       ─────────────────────────────────────────────────────────────── */}
-      <section className="landing-audience" aria-labelledby="audience-heading">
+      <motion.section
+        className="landing-audience"
+        aria-labelledby="audience-heading"
+        initial="hidden"
+        whileInView="visible"
+        viewport={revealViewport}
+        variants={revealVariants}
+      >
         <div className="landing-audience-inner">
           <h2 id="audience-heading" className="landing-audience-heading">
             Who this is for
@@ -322,7 +443,7 @@ function Landing() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
           SECTION 5 — 14 Modules (Chat 3)
