@@ -380,3 +380,295 @@
     padding: var(--space-lg);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SECTION 5 — THE 14 MODULES (Chat 4)
+   Grid of 14 module squares — 7×2 desktop, 4×4 mobile.
+   M1 = TRIAL accent (electric-blue tint), M14 = FINISH accent (green border).
+   Hover/focus/tap opens a tooltip card with module name, outcome,
+   and key deliverable. The tooltip is absolutely positioned relative to
+   each .landing-module-cell so it floats above neighbouring squares
+   without disturbing the grid layout.
+═══════════════════════════════════════════════════════════════════════ */
+
+.landing-modules-section {
+  /* Override .landing-section's placeholder layout: no flex centering,
+     full content flow inside .landing-modules-inner. Section padding
+     and border-bottom carry through from .landing-section. */
+  display: block;
+  min-height: 0;
+  padding: var(--space-3xl) var(--space-xl);
+}
+
+.landing-modules-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+/* ─── Header ───────────────────────────────────────────────────────── */
+
+.landing-modules-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 56ch;
+}
+
+.landing-modules-eyebrow {
+  margin: 0;
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-electric-blue);
+}
+
+.landing-modules-heading {
+  margin: 0;
+  font: var(--text-h2);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+.landing-modules-sub {
+  margin: 0;
+  font: var(--text-body-lg);
+  color: var(--color-text-secondary);
+}
+
+/* ─── Grid: 7×2 desktop ────────────────────────────────────────────── */
+
+.landing-modules-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-md);
+}
+
+/* ─── Cell: wraps square + tooltip; provides positioning context ──── */
+
+.landing-module-cell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* ─── Square: the tappable module marker ──────────────────────────── */
+
+.landing-module-square {
+  /* Reset button defaults */
+  appearance: none;
+  margin: 0;
+  font-family: inherit;
+  cursor: pointer;
+
+  /* Layout — square via aspect-ratio, content centered */
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+
+  /* Visual — terminal-grade, sharp corners */
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  color: var(--color-text-primary);
+
+  /* Interaction */
+  transition: border-color 150ms linear, background-color 150ms linear,
+              color 150ms linear;
+}
+
+.landing-module-square:hover,
+.landing-module-square:focus-visible {
+  border-color: var(--color-electric-blue);
+  background: var(--color-electric-blue-05);
+}
+
+.landing-module-square:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+/* ─── Square content ──────────────────────────────────────────────── */
+
+.landing-module-num {
+  font: var(--text-data);
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text-primary);
+  font-size: 18px; /* slightly larger than --text-data default for grid scale */
+  line-height: 1;
+}
+
+.landing-module-badge {
+  font: var(--text-micro);
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+/* ─── Square modifiers: TRIAL (M1) and FINISH (M14) ───────────────── */
+
+.landing-module-square--trial {
+  background: var(--color-electric-blue-10);
+  border-color: var(--color-electric-blue);
+}
+
+.landing-module-square--trial .landing-module-num {
+  color: var(--color-electric-blue);
+}
+
+.landing-module-square--trial .landing-module-badge {
+  color: var(--color-electric-blue);
+}
+
+.landing-module-square--finish {
+  border-color: var(--color-success-green);
+}
+
+.landing-module-square--finish .landing-module-num {
+  color: var(--color-success-green);
+}
+
+.landing-module-square--finish .landing-module-badge {
+  color: var(--color-success-green);
+}
+
+/* ─── Tooltip ─────────────────────────────────────────────────────── */
+
+.landing-module-tooltip {
+  /* Float above neighbouring cells without disturbing grid flow */
+  position: absolute;
+  top: calc(100% + var(--space-xs));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+
+  /* Card visual */
+  width: 280px;
+  max-width: calc(100vw - var(--space-lg) * 2);
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-top: 2px solid var(--color-electric-blue);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+
+  /* Tooltips of edge cells should clip-back into the viewport.
+     pointer-events: none stops the tooltip from re-triggering hover
+     when the user moves the pointer onto it — the tooltip is read-only
+     content, the square owns interaction. */
+  pointer-events: none;
+}
+
+.landing-module-tooltip-num {
+  margin: 0;
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-electric-blue);
+}
+
+.landing-module-tooltip-name {
+  margin: 0;
+  font: var(--text-h3);
+  font-size: 18px; /* tighter than h3 default — tooltip context */
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+.landing-module-tooltip-outcome {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.landing-module-tooltip-deliverable-label {
+  margin: var(--space-xs) 0 0 0;
+  font: var(--text-micro);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-text-disabled);
+}
+
+.landing-module-tooltip-deliverable {
+  margin: 0;
+  font: var(--text-data);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+/* ─── Edge-cell tooltip positioning ────────────────────────────────
+   First column: tooltip left-aligned to its own square so it doesn't
+   clip off the page edge. Last column: tooltip right-aligned. */
+.landing-module-cell:first-child .landing-module-tooltip,
+.landing-module-cell:nth-child(8) .landing-module-tooltip {
+  /* Columns 1 and 8 (start of each row in 7-col grid — but row 2
+     starts at child 8, not 1. Selector adjusted below for safety) */
+  left: 0;
+  transform: translateX(0);
+}
+
+.landing-module-cell:nth-child(7) .landing-module-tooltip,
+.landing-module-cell:nth-child(14) .landing-module-tooltip {
+  /* Columns 7 and 14 (end of each row in 7-col grid) */
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+/* ─── Mobile (<768px) — 4×4 grid, tooltip below as inline card ────── */
+
+@media (max-width: 767px) {
+  .landing-modules-section {
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .landing-modules-inner {
+    gap: var(--space-xl);
+  }
+
+  .landing-modules-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .landing-module-num {
+    font-size: 16px;
+  }
+
+  .landing-module-badge {
+    font-size: 8px; /* tighter on mobile — square is smaller */
+  }
+
+  /* Tooltip on mobile: centered under the tapped square, narrower.
+     Edge-column overrides cleared — at 4 columns, every column can
+     fit a centered tooltip clipped by the page max-width clamp. */
+  .landing-module-tooltip {
+    width: calc(100vw - var(--space-md) * 4);
+    max-width: 320px;
+  }
+
+  .landing-module-cell:first-child .landing-module-tooltip,
+  .landing-module-cell:nth-child(7) .landing-module-tooltip,
+  .landing-module-cell:nth-child(8) .landing-module-tooltip,
+  .landing-module-cell:nth-child(14) .landing-module-tooltip {
+    /* Reset desktop edge overrides — mobile centers all tooltips */
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+}

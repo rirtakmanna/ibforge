@@ -21,7 +21,8 @@
 //   No exclamation marks. No emoji. No congratulatory language.
 //   Short sentences. Active voice. State facts not feelings.
 
-import { motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import LandingNav from "@/components/landing/LandingNav";
 import BenefitCard from "@/components/landing/BenefitCard";
 import "./Landing.css";
@@ -199,6 +200,161 @@ const audienceBorderStaticVariants = {
   drawn: { scaleY: 1 },
 };
 
+// ─────────────────────────────────────────────────────────────────
+// SECTION 5 — 14 Modules grid: data + variants
+// Static curriculum copy embedded at module scope. Source: ATLAS_Roadmap.md
+// module table + each module's stated goal and final deliverable.
+// Not derived from roadmapData.js at runtime — landing copy is editorial,
+// not user-facing data. Editing this array does NOT require a re-upload
+// of roadmapData.js to project knowledge.
+// ─────────────────────────────────────────────────────────────────
+const landingModules = [
+  {
+    n: 1,
+    name: "Accounting Foundation",
+    duration: "2.5 weeks",
+    outcome:
+      "Read, normalise, and reconstruct any listed company's three financial statements from primary filings.",
+    deliverable: "4 company accounting workbooks (Infosys, HDFC, Sun Pharma, Zalando)",
+  },
+  {
+    n: 2,
+    name: "3-Statement Integrated Model",
+    duration: "2 weeks",
+    outcome:
+      "Build a fully linked 3-statement operating model where every driver flows through P&L, balance sheet, and cash flow.",
+    deliverable: "Guzman y Gomez 3-Statement Model",
+  },
+  {
+    n: 3,
+    name: "DCF Valuation",
+    duration: "2 weeks",
+    outcome:
+      "Run a defensible DCF with explicit WACC build, terminal value, and sensitivity tables on a real company.",
+    deliverable: "Guzman y Gomez DCF on top of the 3-Statement Model",
+  },
+  {
+    n: 4,
+    name: "Trading Comps & Precedent Transactions",
+    duration: "1.5 weeks",
+    outcome:
+      "Build trading comps and precedent transactions tables and triangulate a defensible valuation range.",
+    deliverable: "ITC Trading Comps + Precedent Transactions Workbook",
+  },
+  {
+    n: 5,
+    name: "Strategic Analysis & Capital Allocation",
+    duration: "1.5 weeks",
+    outcome:
+      "Read a company's capital allocation history and form a view on whether management creates or destroys value.",
+    deliverable: "ITC Capital Allocation + Moat Analysis Memo",
+  },
+  {
+    n: 6,
+    name: "Driver-Based Revenue Models",
+    duration: "2.5 weeks",
+    outcome:
+      "Move beyond growth-rate modelling — build revenue from unit drivers (volumes, pricing, mix) per sector logic.",
+    deliverable: "Infosys Driver Model + Zomato SOTP and Reverse DCF",
+  },
+  {
+    n: 7,
+    name: "Bank Modelling & DDM",
+    duration: "2 weeks",
+    outcome:
+      "Model a bank from loan book, NIM components, and credit costs — and value it with a Dividend Discount Model.",
+    deliverable: "HDFC Bank Full Model + DDM",
+  },
+  {
+    n: 8,
+    name: "LBO + Paper LBO + Covenants",
+    duration: "2.5 weeks",
+    outcome:
+      "Build a working LBO with sources & uses, debt schedules, covenant tracking, and verbal paper-LBO fluency.",
+    deliverable: "L&T Technology Services LBO + 5 Paper LBO reps",
+  },
+  {
+    n: 9,
+    name: "M&A Process & Merger Model",
+    duration: "2.5 weeks",
+    outcome:
+      "Run accretion / dilution analysis on a real merger and explain the deal economics from buyer and seller views.",
+    deliverable: "VW / Porsche Merger Model",
+  },
+  {
+    n: 10,
+    name: "Specialist Models (Pharma, Gaming)",
+    duration: "2 weeks",
+    outcome:
+      "Apply sector-specific valuation — pharma pipeline rNPV, gaming GGR build — where standard DCF logic breaks.",
+    deliverable: "Sun Pharma rNPV + Genting Singapore GGR Model",
+  },
+  {
+    n: 11,
+    name: "Industrial Conglomerate (SOTP)",
+    duration: "2 weeks",
+    outcome:
+      "Build a Sum-of-the-Parts valuation on a multi-segment industrial business with order book mechanics.",
+    deliverable: "ITC and L&T parent SOTP Models",
+  },
+  {
+    n: 12,
+    name: "Due Diligence & Credit Analysis",
+    duration: "2 weeks",
+    outcome:
+      "Run commercial DD and credit analysis on a target — leverage capacity, downside cases, covenant headroom.",
+    deliverable: "HDFC Bank Credit Case Study",
+  },
+  {
+    n: 13,
+    name: "Pitchbook & Communication",
+    duration: "2 weeks",
+    outcome:
+      "Convert valuation work into a 15-slide IB-style sell-side pitchbook with football field and strip profiles.",
+    deliverable: "Zalando Sell-Side Pitchbook (15 slides) + 3 Strip Profiles",
+  },
+  {
+    n: 14,
+    name: "Interview Prep & Networking",
+    duration: "1.5 weeks",
+    outcome:
+      "Convert technical capability into job offers — pitch fluency, paper LBO drills, deal tracking, cold outreach.",
+    deliverable: "Coverage Portfolio + Live Deal Tracker + Outreach Tracker + Mock Interview Log",
+  },
+];
+
+// Section 5 — module grid variants
+const moduleGridVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.04, // 40ms between squares
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const moduleSquareVariants = {
+  hidden: { opacity: 0, scale: 0.85 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.25, ease: "easeOut" },
+  },
+};
+
+const moduleTooltipVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.15, ease: "easeOut" } },
+  exit: { opacity: 0, y: 8, transition: { duration: 0.1 } },
+};
+
+// Static fallback for prefers-reduced-motion (module grid + tooltip)
+const moduleStaticVariants = {
+  hidden: { opacity: 1, scale: 1, y: 0 },
+  visible: { opacity: 1, scale: 1, y: 0 },
+};
+
 function Landing() {
   // prefers-reduced-motion: swap animated variants for static end-state.
   // The hook returns true when the OS-level setting is enabled. We compute
@@ -225,6 +381,19 @@ function Landing() {
 
   // Shared viewport config — fires 10% before section enters, single-fire.
   const revealViewport = { once: true, margin: "-10% 0px" };
+
+  // ───────────────────────────────────────────────────────────────
+  // Section 5 — module grid interaction state
+  // hoverModule: which module is currently hovered/focused (desktop).
+  // openModule:  which module is currently click-toggled (mobile/touch).
+  // Both can drive the tooltip — hoverModule for pointer/keyboard,
+  // openModule for tap. Mutually independent so a touch user who
+  // taps + moves their finger doesn't lose the tooltip.
+  // toggleModule: click handler — taps the same square again to close.
+  // ───────────────────────────────────────────────────────────────
+  const [hoverModule, setHoverModule] = useState(null);
+  const [openModule, setOpenModule] = useState(null);
+  const toggleModule = (n) => setOpenModule((prev) => (prev === n ? null : n));
 
   return (
     <div className="landing">
@@ -677,11 +846,112 @@ function Landing() {
       </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
-          SECTION 5 — 14 Modules (Chat 3)
+          SECTION 5 — The 14 Modules (Chat 4)
+          14 module squares: 7×2 desktop, 4×4 mobile. M1 = TRIAL accent,
+          M14 = FINISH accent. Hover (desktop) / tap (mobile) opens tooltip
+          with module name, outcome, key deliverable. Data from the
+          landingModules constant at module scope above.
       ─────────────────────────────────────────────────────────────── */}
-      <section className="landing-section" aria-label="Modules placeholder">
-        <p className="landing-placeholder-text">SECTION 5 — 14 MODULES</p>
-      </section>
+      <motion.section
+        className="landing-section landing-modules-section"
+        aria-labelledby="landing-modules-heading"
+        variants={revealVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={revealViewport}
+      >
+        <div className="landing-modules-inner">
+          <header className="landing-modules-header">
+            <p className="landing-modules-eyebrow">The Roadmap</p>
+            <h2 id="landing-modules-heading" className="landing-modules-heading">
+              14 modules. 26 weeks. Built in order.
+            </h2>
+            <p className="landing-modules-sub">
+              Each module locks until the previous deliverable is in your portfolio.
+              Hover any module to see what it produces.
+            </p>
+          </header>
+
+          <motion.ul
+            className="landing-modules-grid"
+            role="list"
+            variants={prefersReducedMotion ? moduleStaticVariants : moduleGridVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={revealViewport}
+          >
+            {landingModules.map((mod) => {
+              const isTrial = mod.n === 1;
+              const isFinish = mod.n === 14;
+              const squareClass = [
+                "landing-module-square",
+                isTrial && "landing-module-square--trial",
+                isFinish && "landing-module-square--finish",
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              const [isOpen, setOpen] = [openModule === mod.n, () => toggleModule(mod.n)];
+
+              return (
+                <motion.li
+                  key={mod.n}
+                  className="landing-module-cell"
+                  variants={
+                    prefersReducedMotion ? moduleStaticVariants : moduleSquareVariants
+                  }
+                >
+                  <button
+                    type="button"
+                    className={squareClass}
+                    aria-expanded={isOpen}
+                    aria-controls={`landing-module-tooltip-${mod.n}`}
+                    onClick={setOpen}
+                    onMouseEnter={() => setHoverModule(mod.n)}
+                    onMouseLeave={() => setHoverModule(null)}
+                    onFocus={() => setHoverModule(mod.n)}
+                    onBlur={() => setHoverModule(null)}
+                  >
+                    <span className="landing-module-num">M{mod.n}</span>
+                    {isTrial && <span className="landing-module-badge">TRIAL</span>}
+                    {isFinish && <span className="landing-module-badge">FINISH</span>}
+                  </button>
+
+                  <AnimatePresence>
+                    {(hoverModule === mod.n || openModule === mod.n) && (
+                      <motion.div
+                        id={`landing-module-tooltip-${mod.n}`}
+                        className="landing-module-tooltip"
+                        role="tooltip"
+                        variants={
+                          prefersReducedMotion
+                            ? moduleStaticVariants
+                            : moduleTooltipVariants
+                        }
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                      >
+                        <p className="landing-module-tooltip-num">
+                          MODULE {mod.n} · {mod.duration}
+                        </p>
+                        <p className="landing-module-tooltip-name">{mod.name}</p>
+                        <p className="landing-module-tooltip-outcome">{mod.outcome}</p>
+                        <p className="landing-module-tooltip-deliverable-label">
+                          Deliverable
+                        </p>
+                        <p className="landing-module-tooltip-deliverable">
+                          {mod.deliverable}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.li>
+              );
+            })}
+          </motion.ul>
+        </div>
+      </motion.section>
 
       {/* ───────────────────────────────────────────────────────────────
           SECTION 6 — Proof of work (Chat 3)
