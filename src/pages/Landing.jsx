@@ -75,11 +75,95 @@ const benefitCardItemVariants = {
   },
 };
 
+// ───────────────────────────────────────────────────────────────
+// JOURNEY ARC VARIANTS (Step 5.5 STEP 2 — Section 2 Hero)
+// Three-layer orchestration on the 14-dot rising curve:
+//   1. <path> draws left-to-right via pathLength 0 → 1 (800ms)
+//   2. 14 <circle> dots fade in sequentially, 50ms stagger,
+//      starting 240ms in (after path is 30% drawn) so they track the line
+//   3. Two <text> labels (M1, M14) fade in 200ms after the last dot lands
+//      (~940ms in) — no stagger between the two
+//
+// Single-fire on viewport entry. SVG is self-contained: its own
+// whileInView, independent of the Hero section's reveal.
+// ─────────────────────────────────────────────────────────────── */
+
+// Parent SVG variant — orchestrates children. delayChildren staggers
+// the child cascade against the parent's "visible" transition start.
+// staggerChildren applies to direct motion children that don't set their
+// own delay. The path and dots set explicit delays so they layer correctly.
+const arcSvgVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      // Direct children that inherit "visible" without their own delay
+      // get this stagger. We use it only for the 14 dots — path and
+      // labels override with explicit transition.delay.
+      staggerChildren: 0.05,
+      delayChildren: 0.24, // dots begin after path is 30% drawn
+    },
+  },
+};
+
+// Path draw — pathLength 0 → 1 over 800ms, ease-out, no delay.
+// Fires immediately when the SVG enters viewport.
+const arcPathVariants = {
+  hidden: { pathLength: 0, opacity: 0 },
+  visible: {
+    pathLength: 1,
+    opacity: 1,
+    transition: {
+      pathLength: { duration: 0.8, ease: [0, 0, 0.2, 1], delay: 0 },
+      opacity: { duration: 0.1, delay: 0 },
+    },
+  },
+};
+
+// Each dot — fades in over 150ms. The cascade timing comes from the
+// parent SVG's staggerChildren (50ms) + delayChildren (240ms).
+const arcDotVariants = {
+  hidden: { opacity: 0, scale: 0.5 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.15, ease: [0, 0, 0.2, 1] },
+  },
+};
+
+// Labels — fade in 200ms, both at once, after all dots have landed.
+// Total dot sequence ends at 240 + (14 × 50) = 940ms in.
+// Labels start at 0.94s so they don't compete with the dot cascade.
+const arcLabelVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: 0.2, ease: [0, 0, 0.2, 1], delay: 0.94 },
+  },
+};
+
 // Reduced-motion variants — instant final state, no movement, no fade.
 // Swapped in via useReducedMotion() hook inside the component.
 const staticVariants = {
   hidden: { opacity: 1, y: 0 },
   visible: { opacity: 1, y: 0 },
+};
+
+// Static variants for arc children — they need their full final shape
+// (pathLength:1 for the path, scale:1 for dots). The generic staticVariants
+// above only covers opacity + y, which is wrong for path/circle/text.
+const arcPathStaticVariants = {
+  hidden: { pathLength: 1, opacity: 1 },
+  visible: { pathLength: 1, opacity: 1 },
+};
+
+const arcDotStaticVariants = {
+  hidden: { opacity: 1, scale: 1 },
+  visible: { opacity: 1, scale: 1 },
+};
+
+const arcLabelStaticVariants = {
+  hidden: { opacity: 1 },
+  visible: { opacity: 1 },
 };
 
 function Landing() {
@@ -90,6 +174,14 @@ function Landing() {
   const revealVariants = prefersReducedMotion ? staticVariants : sectionRevealVariants;
   const gridVariants = prefersReducedMotion ? staticVariants : benefitsGridVariants;
   const cardItemVariants = prefersReducedMotion ? staticVariants : benefitCardItemVariants;
+
+  // Arc-specific variants. The arc's children (path, dots, labels) need
+  // their own static fallbacks because the generic staticVariants only
+  // covers opacity + y — the arc children also animate pathLength and scale.
+  const arcSvgVariantsActive = prefersReducedMotion ? staticVariants : arcSvgVariants;
+  const arcPathVariantsActive = prefersReducedMotion ? arcPathStaticVariants : arcPathVariants;
+  const arcDotVariantsActive = prefersReducedMotion ? arcDotStaticVariants : arcDotVariants;
+  const arcLabelVariantsActive = prefersReducedMotion ? arcLabelStaticVariants : arcLabelVariants;
 
   // Shared viewport config — fires 10% before section enters, single-fire.
   const revealViewport = { once: true, margin: "-10% 0px" };
@@ -134,17 +226,27 @@ function Landing() {
           </p>
 
           {/* Journey arc — 14 dots rising from baseline (M1) to peak (M14).
-              Pure SVG, no Framer Motion needed; the visual is static.
-              viewBox is 700×200; responsive via width:100%; height:auto in CSS. */}
+              viewBox is 700×200; responsive via width:100%; height:auto in CSS.
+
+              STEP 5.5 STEP 2: Three-layer draw-on-scroll orchestration.
+              The outer motion.svg owns the whileInView trigger and the
+              staggerChildren cascade for the 14 dots. The path draws
+              independently (its own delay:0). The labels fade in last
+              (their own delay:0.94). Baseline reference line stays static
+              — it's structural background, not part of the reveal. */}
           <div className="landing-hero-arc" aria-hidden="true">
-            <svg
+            <motion.svg
               viewBox="0 0 700 200"
               xmlns="http://www.w3.org/2000/svg"
               preserveAspectRatio="xMidYMid meet"
               role="img"
               aria-label="14-module journey arc from accounting fundamentals to interview readiness"
+              initial="hidden"
+              whileInView="visible"
+              viewport={revealViewport}
+              variants={arcSvgVariantsActive}
             >
-              {/* Baseline reference line — very subtle, drops below the arc */}
+              {/* Baseline reference line — static, not part of the reveal */}
               <line
                 x1="40"
                 y1="160"
@@ -156,38 +258,40 @@ function Landing() {
               />
 
               {/* The rising curve — quadratic-style, from (40, 160) up to (660, 40).
-                  Path drawn with a single cubic Bézier for a smooth, slightly
-                  asymmetric rise (steeper in the back half — modules 11–14 are
-                  where the real synthesis work happens). */}
-              <path
+                  Path drawn with a single cubic Bézier. Framer Motion animates
+                  pathLength 0 → 1, which it implements internally via
+                  stroke-dasharray + stroke-dashoffset. No manual CSS needed. */}
+              <motion.path
                 d="M 40 160 C 220 160, 380 130, 660 40"
                 stroke="var(--color-electric-blue)"
                 strokeWidth="2"
                 fill="none"
                 strokeLinecap="round"
+                variants={arcPathVariantsActive}
               />
 
-              {/* 14 dots, evenly spaced in x, y interpolated along the curve.
-                  Coordinates pre-calculated to sit ON the path (sampled at
-                  t = 0, 1/13, 2/13 ... 13/13). Last dot is slightly larger
-                  to emphasize the M14 endpoint. */}
-              <circle cx="40"  cy="160" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="88"  cy="159" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="136" cy="156" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="184" cy="152" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="231" cy="147" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="279" cy="141" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="327" cy="133" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="374" cy="124" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="422" cy="113" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="469" cy="100" r="4" fill="var(--color-electric-blue)" />
-              <circle cx="517" cy="86"  r="4" fill="var(--color-electric-blue)" />
-              <circle cx="565" cy="70"  r="4" fill="var(--color-electric-blue)" />
-              <circle cx="612" cy="54"  r="4" fill="var(--color-electric-blue)" />
-              <circle cx="660" cy="40"  r="6" fill="var(--color-electric-blue)" />
+              {/* 14 dots — each inherits the parent's staggerChildren (50ms)
+                  + delayChildren (240ms). Coordinates pre-calculated to sit
+                  ON the path (sampled at t = 0, 1/13, 2/13 ... 13/13).
+                  Last dot is slightly larger to emphasize the M14 endpoint. */}
+              <motion.circle cx="40"  cy="160" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="88"  cy="159" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="136" cy="156" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="184" cy="152" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="231" cy="147" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="279" cy="141" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="327" cy="133" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="374" cy="124" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="422" cy="113" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="469" cy="100" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="517" cy="86"  r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="565" cy="70"  r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="612" cy="54"  r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="660" cy="40"  r="6" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
 
-              {/* Labels — endpoint anchors only. JetBrains Mono terminal style. */}
-              <text
+              {/* Labels — endpoint anchors only. JetBrains Mono terminal style.
+                  Their own delay:0.94 fires them after the last dot lands. */}
+              <motion.text
                 x="40"
                 y="185"
                 fontFamily="var(--font-mono)"
@@ -195,10 +299,11 @@ function Landing() {
                 fill="var(--color-text-secondary)"
                 textAnchor="start"
                 letterSpacing="0.5"
+                variants={arcLabelVariantsActive}
               >
                 M1 — ACCOUNTING
-              </text>
-              <text
+              </motion.text>
+              <motion.text
                 x="660"
                 y="25"
                 fontFamily="var(--font-mono)"
@@ -206,10 +311,11 @@ function Landing() {
                 fill="var(--color-text-secondary)"
                 textAnchor="end"
                 letterSpacing="0.5"
+                variants={arcLabelVariantsActive}
               >
                 M14 — INTERVIEW READY
-              </text>
-            </svg>
+              </motion.text>
+            </motion.svg>
           </div>
 
           <div className="landing-hero-ctas">
