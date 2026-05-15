@@ -1,0 +1,298 @@
+/* src/components/legal/LegalPage.css
+ *
+ * Chassis styling for legal pages (Privacy, Terms, Refund).
+ *
+ * Long-form text layout. Max-width 680px for body content — Brand
+ * System reading-comfort target. Nav and footer continue to live in
+ * their own component CSS — this file owns only the page body shell.
+ *
+ * Brand tokens only — zero hex codes per Core Architecture Rules §3.
+ *
+ * KEY ARCHITECTURAL CHOICE:
+ *   The body width is 680px (reading width). The TOC is wider — it
+ *   doesn't need the same line-length constraint and reads better
+ *   as a 2-column grid on desktop where space allows. Both clamp
+ *   to 100% on mobile.
+ */
+
+/* ─── Page shell ──────────────────────────────────────────────────── */
+
+.legal-page {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  width: 100%;
+  /* Same overflow rule as Landing — prevent horizontal scroll at
+     375px. Long words / URLs in legal copy use word-break overrides
+     below where appropriate. */
+  overflow-x: hidden;
+  /* Flex column lets the footer sit at the bottom even on short
+     pages (Refund, with only 4 sections, may not fill the viewport
+     on a tall desktop monitor). */
+  display: flex;
+  flex-direction: column;
+}
+
+.legal-page-main {
+  /* Grows to fill space between nav and footer on short pages */
+  flex: 1 1 auto;
+  padding: var(--space-3xl) var(--space-xl);
+}
+
+.legal-page-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+}
+
+/* ─── Page header — H1 + last-updated caption ─────────────────────── */
+
+.legal-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  /* Header content widens to match the body — reads as a unit. */
+  max-width: 680px;
+}
+
+.legal-page-title {
+  margin: 0;
+  font: var(--text-h1);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+  /* H1 default line-height (1.1) can run too tight on long titles
+     like "Privacy Policy" alone is fine, but "Terms of Service"
+     wraps on narrow widths. Bump slightly for breathing room. */
+  line-height: 1.15;
+}
+
+.legal-page-last-updated {
+  margin: 0;
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-text-secondary);
+  /* JetBrains Mono caption — terminal-grade metadata marker.
+     Matches the "POST [N] OF [TOTAL]" pattern used on LinkedIn
+     post cards so versioned-document metadata reads consistently
+     across the product. */
+}
+
+/* ─── Optional TOC ────────────────────────────────────────────────── */
+
+.legal-page-toc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  /* TOC sits visually between the header and body. Card-like
+     chassis (matches the trust-block founder card pattern) so it
+     reads as a distinct navigation surface, not body content. */
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-lg) var(--space-xl);
+  /* TOC widens beyond body width on desktop — needs room for the
+     2-column layout below. Caps generously, doesn't try to fill
+     the full 1280px container. */
+  max-width: 920px;
+}
+
+.legal-page-toc-label {
+  margin: 0;
+  font: var(--text-terminal);
+  letter-spacing: var(--tracking-widest);
+  color: var(--color-text-disabled);
+  /* Matches the trust-block links-column label pattern */
+}
+
+.legal-page-toc-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* 2-column grid on desktop — Privacy (14 sections) and Terms
+     (26 sections) read more compactly in two columns. The dense
+     scan also makes section gaps visible at a glance. */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm) var(--space-xl);
+  counter-reset: toc;
+}
+
+.legal-page-toc-item {
+  margin: 0;
+}
+
+.legal-page-toc-link {
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition:
+    color 150ms linear,
+    border-color 150ms linear;
+  display: inline-block;
+  line-height: 1.5;
+}
+
+.legal-page-toc-link:hover {
+  color: var(--color-electric-blue);
+  border-bottom-color: var(--color-electric-blue);
+}
+
+.legal-page-toc-link:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 3px;
+}
+
+/* ─── Body — section list ─────────────────────────────────────────── */
+
+.legal-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xl);
+  /* 680px = Brand System reading-comfort target for long prose.
+     Same as the trust card body cap (64ch ≈ 680px in Inter Regular). */
+  max-width: 680px;
+}
+
+.legal-page-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  /* Scroll-margin: when a TOC link is clicked, the browser scrolls
+     this element into view. Sticky LandingNav is 64px tall on desktop
+     (56px on mobile). Without scroll-margin-top, the heading would
+     sit BEHIND the nav. --space-3xl (64px) matches desktop nav height
+     exactly; on mobile the 8px overshoot reads as comfortable padding
+     rather than a layout bug. The smooth-scroll behaviour itself is
+     already global (html { scroll-behavior: smooth } in index.css). */
+  scroll-margin-top: var(--space-3xl);
+}
+
+.legal-page-section-heading {
+  margin: 0;
+  font: var(--text-h3);
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+/* ─── Body node types ────────────────────────────────────────────── */
+
+.legal-page-paragraph {
+  margin: 0;
+  font: var(--text-body-lg);
+  color: var(--color-text-secondary);
+  /* Slightly generous line-height for legal-prose reading rhythm.
+     Brand System body-lg defaults to 1.6 — we keep it. */
+  line-height: 1.6;
+  /* Legal copy often contains long URLs and email addresses. Allow
+     them to break inside the word rather than overflowing the body
+     width on mobile. */
+  overflow-wrap: anywhere;
+}
+
+.legal-page-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.legal-page-list-item {
+  margin: 0;
+  font: var(--text-body-lg);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  /* Visual leader — thin dash before each item. Same pattern as the
+     pricing-list items on Landing for consistency across the product. */
+  position: relative;
+  padding-left: var(--space-md);
+  overflow-wrap: anywhere;
+}
+
+.legal-page-list-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.7em;
+  width: 8px;
+  height: 1px;
+  background: var(--color-text-disabled);
+}
+
+.legal-page-subheading {
+  margin: 0;
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+.legal-page-subheading--3 {
+  font: var(--text-h3);
+  /* Tighter font-size than the section H2 above — subheadings sit
+     inside a section, shouldn't compete with the section's own
+     heading for visual weight. */
+  font-size: 18px;
+}
+
+.legal-page-subheading--4 {
+  font: var(--text-h3);
+  font-size: 16px;
+  /* H4 is rare — only used when a section needs two levels of
+     sub-structure. Reads as a "stronger paragraph lead" more than
+     a heading. */
+}
+
+/* ─── Mobile (<768px) ─────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .legal-page-main {
+    /* Tighter horizontal padding; vertical eased to keep the H1
+       breathing room. */
+    padding: var(--space-2xl) var(--space-md);
+  }
+
+  .legal-page-inner {
+    gap: var(--space-xl);
+  }
+
+  .legal-page-title {
+    /* H1 token is 48px Space Grotesk — too dominant at 375px
+       against a body width of 100% of (375 - 32) = 343px. Scale
+       down for mobile reading rhythm. */
+    font-size: 32px;
+  }
+
+  .legal-page-toc {
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  .legal-page-toc-list {
+    /* Single column on mobile — 2-column TOC squeezes link labels
+       to 1-2 words per line, which makes section titles unreadable. */
+    grid-template-columns: 1fr;
+  }
+
+  .legal-page-body {
+    /* On mobile the body fills the container. The reading-width
+       cap (680px) is wider than the viewport so this is implicit,
+       but documenting the intent. */
+    max-width: 100%;
+  }
+
+  .legal-page-section {
+    /* Match desktop scroll-margin-top — mobile nav is 56px (vs
+       64px) but the 8px overshoot is comfortable padding. No
+       breakpoint split needed. */
+    scroll-margin-top: var(--space-3xl);
+  }
+
+  .legal-page-paragraph,
+  .legal-page-list-item {
+    /* body-lg is 16px; on mobile bump down line-height slightly
+       since narrower lines need less leading. */
+    line-height: 1.55;
+  }
+}
