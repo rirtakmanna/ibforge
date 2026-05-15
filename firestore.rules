@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────────────────────
+    // access-codes/{code}
+    // Trial and full access codes. Read/write denied to all clients —
+    // only Cloud Functions (claimCode, issueTrialCode) touch this
+    // collection via the Admin SDK, which bypasses these rules.
+    // ─────────────────────────────────────────────────────────────
+    match /access-codes/{code} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // trial-requests/{email}
+    // Rate-limit doc keyed by email. issueTrialCode Cloud Function
+    // writes lastRequestedAt; no client ever reads or writes this.
+    // ─────────────────────────────────────────────────────────────
+    match /trial-requests/{email} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // users/{userId} — the user document itself.
+    //
+    // Reads: owner only.
+    //
+    // Writes: owner only, AND the write must NEVER touch the three
+    // server-controlled fields: access, role, codeUsed. Cloud Functions
+    // using the Admin SDK bypass these rules and remain the only way
+    // those fields are ever written.
+    //
+    // The client IS allowed to write onboardingComplete and any other
+    // app-state fields the operator's UI needs to set.
+    // ─────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      // Returns true if the incoming write payload contains ANY of the
+      // three server-controlled keys. We use the keys() of request.resource.data
+      // intersected with the protected set — if the intersection is non-empty,
+      // the client is trying to touch a forbidden field.
+      function touchesServerFields() {
+        return request.resource.data.keys().hasAny(['access', 'role', 'codeUsed']);
+      }
+
+      allow read: if isOwner();
+
+      // Create: owner only, must not include any server-controlled field.
+      allow create: if isOwner()
+                    && request.resource.data.size() < 1000000
+                    && !touchesServerFields();
+
+      // Update: owner only, must not include any server-controlled field
+      // in the incoming write payload. This is stricter than "field must
+      // not change" — it forbids the field from being present in the write
+      // at all. (Setting a field to its existing value still counts as
+      // a write to that field in Firestore Rules' eyes, so this is the
+      // correct stance for fields the client should never name.)
+      allow update: if isOwner()
+                    && request.resource.data.size() < 1000000
+                    && !touchesServerFields();
+
+      // Delete: owner only.
+      allow delete: if isOwner();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // users/{userId}/{collection}/{document=**} — all subcollections
+    // under the user document (progress, deliverables, uiState,
+    // schedule, etc).
+    //
+    // The {collection} segment is required so this rule matches
+    // ONLY subcollection documents, never the user document itself.
+    // Without it, the recursive wildcard {document=**} matches the
+    // user document too, and Firestore Rules OR-unions all matching
+    // rule allows — which would silently bypass the strict field-level
+    // protections in the rule above.
+    //
+    // Owner-only, same as Phase 3. Cloud Functions bypass via Admin SDK.
+    // ─────────────────────────────────────────────────────────────
+    match /users/{userId}/{collection}/{document=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null
+                   && request.auth.uid == userId
+                   && request.resource.data.size() < 1000000;
+    }
+  }
+}
