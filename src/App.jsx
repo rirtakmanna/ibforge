@@ -16,6 +16,9 @@ import RequireAuth from "@/components/RequireAuth";
 
 import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
+import Refund from "@/pages/Refund";
 import Dashboard from "@/pages/Dashboard";
 import Roadmap from "@/pages/Roadmap";
 import StepDetail from "@/pages/StepDetail";
@@ -32,6 +35,9 @@ function App() {
           {/* Public routes — no auth, no Layout shell */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/refund" element={<Refund />} />
 
           {/* Authenticated routes — all under <Layout /> via <Outlet /> */}
           <Route

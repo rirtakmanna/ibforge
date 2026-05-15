@@ -1,0 +1,20 @@
+/* src/pages/Privacy.css
+ *
+ * Privacy Policy route stylesheet.
+ *
+ * The LegalPage chassis owns ALL visual styling for this route:
+ * page shell, header, TOC, body, sections, footer. See
+ * src/components/legal/LegalPage.css for the actual rules.
+ *
+ * This file exists for two reasons:
+ *   1. Symmetry with every other route in the codebase (every
+ *      page in src/pages/ has a matching .css file).
+ *   2. A future page-specific override hook — if Privacy ever
+ *      needs a one-off rule that doesn't generalise to Terms or
+ *      Refund (e.g. a hero illustration, a feature callout), the
+ *      file is already on disk and imported.
+ *
+ * KEEP EMPTY by default. Page-specific overrides only — never
+ * duplicate chassis rules here. If a rule belongs on more than
+ * one legal page, it belongs in LegalPage.css.
+ */
