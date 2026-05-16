@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .env
+scripts/serviceAccountKey.json
+scripts/seeded-codes.txt
 .env.local
 .env.*.local
 .DS_Store
