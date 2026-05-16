@@ -21,7 +21,7 @@
 //   No exclamation marks. No emoji. No congratulatory language.
 //   Short sentences. Active voice. State facts not feelings.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { httpsCallable } from "firebase/functions";
@@ -525,6 +525,44 @@ function Landing() {
   // The hook returns true when the OS-level setting is enabled. We compute
   // the active variant maps ONCE per render — no per-section ternaries.
   const prefersReducedMotion = useReducedMotion();
+
+  // ───────────────────────────────────────────────────────────────
+  // HASH-SCROLL HANDLER
+  // Browser native hash-scroll runs before React mounts, so when a user
+  // lands on /#pricing (e.g. from the /access "the pricing section" link),
+  // the browser tries to scroll before the section is in the DOM. By the
+  // time Landing paints, the moment has passed.
+  //
+  // Fix: on mount, read window.location.hash, find the target, scroll into
+  // view. setTimeout(_, 0) defers one tick so the section has a chance to
+  // exist in the DOM. behavior: "auto" gives an instant jump (no 600ms
+  // smooth scroll) because the user arrived intending to be there — they
+  // don't want to watch the journey.
+  //
+  // Empty dependency array — runs once per mount. If the user clicks an
+  // in-page anchor while already on Landing, the browser's native
+  // hash-scroll works fine (no race with React mount).
+  // ─────────────────────────────────────────────────────────────── */
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) return;
+
+    const id = hash.slice(1); // drop the leading "#"
+    if (!id) return;
+
+    // Defer one tick — gives React time to commit the DOM nodes for the
+    // section. Without this, getElementById can miss the target on the
+    // very first render.
+    const timeoutId = setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "auto", block: "start" });
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
   const revealVariants = prefersReducedMotion ? staticVariants : sectionRevealVariants;
   const gridVariants = prefersReducedMotion ? staticVariants : benefitsGridVariants;
   const cardItemVariants = prefersReducedMotion ? staticVariants : benefitCardItemVariants;

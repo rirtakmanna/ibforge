@@ -16,7 +16,10 @@
   font-family: var(--font-body);
   min-height: 100vh;
   width: 100%;
-  overflow-x: hidden; /* hard-block horizontal scroll at 375px */
+  /* overflow-x: clip prevents horizontal scrolling without implicitly 
+     changing overflow-y to auto (which hidden does), thus avoiding the 
+     two-scrollbar bug. */
+  overflow-x: clip;
 }
 
 /* Placeholder section — visible only during STEP 1 → STEP 5 build.

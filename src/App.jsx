@@ -14,6 +14,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import Layout from "@/components/Layout";
 import RequireAuth from "@/components/RequireAuth";
 
+import Access from "@/pages/Access";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
 import Privacy from "@/pages/Privacy";
@@ -34,6 +35,7 @@ function App() {
         <Routes>
           {/* Public routes — no auth, no Layout shell */}
           <Route path="/" element={<Landing />} />
+          <Route path="/access" element={<Access />} />
           <Route path="/login" element={<Login />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />

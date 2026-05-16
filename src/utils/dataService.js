@@ -1227,6 +1227,50 @@ export async function scheduleLinkedInPosts(stepId, posts, completionDate) {
   return { ok: true, count: scheduled.length };
 }
 
+// ─── Access record (Phase 4B) ───────────────────────────────────────────────
+
+/**
+ * Reads the user's access record at users/{uid}.access (object field on the
+ * user's root doc). Returns the record object or null if no record exists.
+ *
+ * Used by:
+ *   - /access page (Phase 4B Step 6) — to redirect already-redeemed users to /dashboard
+ *   - RequireAuth (Phase 4B Step 7) — to gate authenticated routes on access existence
+ *
+ * Takes an explicit `uid` argument rather than reading cache.currentUserId.
+ * This makes the function safe to call BEFORE dataService's internal auth
+ * listener has finished attaching — which matters on /access cold loads where
+ * Access.jsx resolves auth independently and calls this immediately.
+ *
+ * Read shape: users/{uid} is the root user doc. The `access` field is an
+ * object: { plan: "trial"|"full", codeUsed: string, grantedAt: Timestamp }.
+ * The claimCode Cloud Function (Step 2) writes this field; clients read only.
+ *
+ * Returns:
+ *   - The access record object { plan, codeUsed, grantedAt } if present
+ *   - null if the user doc doesn't exist OR the doc exists but has no `access` field
+ *
+ * Throws on:
+ *   - invalid uid (non-string or empty)
+ *   - Firestore read failure (network, permissions)
+ */
+export async function getAccessRecord(uid) {
+  if (typeof uid !== "string" || uid.length === 0) {
+    throw new Error("[dataService] getAccessRecord requires uid string");
+  }
+
+  const { getDoc } = await import("firebase/firestore");
+  const userDocRef = doc(db, "users", uid);
+  const snap = await getDoc(userDocRef);
+
+  if (!snap.exists()) return null;
+
+  const data = snap.data();
+  if (!data || !data.access || typeof data.access !== "object") return null;
+
+  return data.access;
+}
+
 // ─── Browser console exposure (DEV ONLY) ────────────────────────────────────
 // Lets the operator run dataService.markStepComplete("M1-S01") in DevTools
 // for the Phase 1 smoke test. Removed in production builds via Vite's
