@@ -24,10 +24,25 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "@/utils/firebase";
 import LandingNav from "@/components/landing/LandingNav";
 import LandingFooter from "@/components/landing/LandingFooter";
 import BenefitCard from "@/components/landing/BenefitCard";
 import "./Landing.css";
+
+// ───────────────────────────────────────────────────────────────
+// Trial form helper — mask email for confirmation display.
+// "rirtakmanna@gmail.com" → "ri••••••••@gmail.com"
+// Keeps the first 2 chars + domain visible. Privacy-respecting
+// without being unhelpful (user can still recognise their own).
+// ─────────────────────────────────────────────────────────────── */
+function maskEmail(email) {
+  if (!email || typeof email !== "string" || !email.includes("@")) return email;
+  const [local, domain] = email.split("@");
+  if (local.length <= 2) return `${local}@${domain}`;
+  return `${local.slice(0, 2)}${"•".repeat(Math.min(local.length - 2, 8))}@${domain}`;
+}
 
 // ───────────────────────────────────────────────────────────────
 // SCROLL-REVEAL VARIANTS (Step 5.5 STEP 1)
@@ -559,12 +574,78 @@ function Landing() {
   const [isTrialFormOpen, setIsTrialFormOpen] = useState(false);
   const [trialEmail, setTrialEmail] = useState("");
 
-  const handleTrialSubmit = (e) => {
+  // Trial-form flow state machine:
+  //   "idle"        — form visible, ready for input
+  //   "submitting"  — issueTrialCode callable in flight; button disabled
+  //   "success"     — code sent; form replaced by confirmation block
+  //   "error"       — inline error message above the form; user can retry
+  // sentToEmail captures the value at submit time so the masked confirmation
+  // doesn't change if the user keeps typing afterward (shouldn't happen
+  // since success replaces the form, but defensive).
+  const [trialStatus, setTrialStatus] = useState("idle");
+  const [trialErrorMsg, setTrialErrorMsg] = useState("");
+  const [sentToEmail, setSentToEmail] = useState("");
+
+  // Reset trial state on close. Re-opening shows a fresh empty form —
+  // never stale confirmation text from a previous send.
+  const closeTrialForm = () => {
+    setIsTrialFormOpen(false);
+    setTrialStatus("idle");
+    setTrialErrorMsg("");
+    setTrialEmail("");
+    setSentToEmail("");
+  };
+
+  const handleTrialSubmit = async (e) => {
     e.preventDefault();
-    // TODO Phase 4B: POST email to /.netlify/functions/issue-trial-code
-    // For now: log only. Form stays open; no UI feedback yet.
-    // eslint-disable-next-line no-console
-    console.log("[trial-form-placeholder] email submitted:", trialEmail);
+    if (trialStatus === "submitting") return; // in-flight lock
+
+    // Lightweight client-side email format check before firing the callable.
+    // Server validates again — this just avoids a guaranteed-bad round-trip.
+    const trimmed = trialEmail.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setTrialStatus("error");
+      setTrialErrorMsg("Enter a valid email address.");
+      return;
+    }
+
+    setTrialStatus("submitting");
+    setTrialErrorMsg("");
+
+    try {
+      const issueTrialCode = httpsCallable(functions, "issueTrialCode");
+      await issueTrialCode({ email: trimmed });
+      setSentToEmail(trimmed);
+      setTrialStatus("success");
+    } catch (err) {
+      // Firebase Callable wraps thrown HttpsError as { code, message, details }.
+      // Map known codes to brand-voice copy; everything else is a generic line.
+      // Per §Commercial Context Rules: no apology language, no marketing.
+      const code = err?.code || "";
+      const serverMessage = err?.message || "";
+
+      let userMessage;
+      if (
+        code === "functions/resource-exhausted" ||
+        /rate/i.test(serverMessage)
+      ) {
+        userMessage =
+          "You already requested a code recently. Check your inbox or wait 60 seconds.";
+      } else if (
+        code === "functions/invalid-argument" ||
+        /email/i.test(serverMessage)
+      ) {
+        userMessage = "Enter a valid email address.";
+      } else {
+        userMessage =
+          "Couldn't send the code. Email hello@ibforge.in if this keeps happening.";
+      }
+
+      setTrialStatus("error");
+      setTrialErrorMsg(userMessage);
+      // eslint-disable-next-line no-console
+      console.error("[issueTrialCode]", code || "unknown", serverMessage);
+    }
   };
 
   const handleUpiPay = (e) => {
@@ -1315,45 +1396,100 @@ function Landing() {
                       animate="expanded"
                       exit="collapsed"
                     >
-                      {/* Close button — sits above the form per spec */}
+                      {/* Close button — sits above the form/confirmation per spec.
+                          Same button regardless of state; closes + resets all
+                          derived trial state via closeTrialForm(). */}
                       <button
                         type="button"
                         className="landing-pricing-trial-close"
                         aria-expanded={true}
                         aria-controls="trial-form-panel"
-                        onClick={() => setIsTrialFormOpen(false)}
+                        onClick={closeTrialForm}
                       >
                         ← Close
                       </button>
-                      <form
-                        className="landing-pricing-trial-form"
-                        onSubmit={handleTrialSubmit}
-                        noValidate
-                      >
-                        <label
-                          className="landing-pricing-trial-label"
-                          htmlFor="trial-email-input"
+
+                      {trialStatus === "success" ? (
+                        // ─── SUCCESS STATE ────────────────────────────────
+                        // Form is replaced entirely by confirmation block.
+                        // aria-live="polite" so screen readers announce the
+                        // result without interrupting whatever the user is
+                        // currently focused on (likely the Close button).
+                        <div
+                          className="landing-pricing-trial-success"
+                          role="status"
+                          aria-live="polite"
                         >
-                          Email
-                        </label>
-                        <input
-                          id="trial-email-input"
-                          className="landing-pricing-trial-input"
-                          type="email"
-                          name="email"
-                          required
-                          autoComplete="email"
-                          placeholder="you@example.com"
-                          value={trialEmail}
-                          onChange={(e) => setTrialEmail(e.target.value)}
-                        />
-                        <button
-                          type="submit"
-                          className="landing-pricing-trial-submit"
-                        >
-                          Email me a code
-                        </button>
-                      </form>
+                          <p className="landing-pricing-trial-success-headline">
+                            Check your email.
+                          </p>
+                          <p className="landing-pricing-trial-success-body">
+                            Code sent to{" "}
+                            <span className="landing-pricing-trial-success-email">
+                              {maskEmail(sentToEmail)}
+                            </span>
+                            . Enter it at{" "}
+                            <a
+                              href="/access"
+                              className="landing-pricing-trial-success-link"
+                            >
+                              ibforge.in/access
+                            </a>{" "}
+                            to begin Module 1.
+                          </p>
+                        </div>
+                      ) : (
+                        // ─── IDLE / SUBMITTING / ERROR STATE ──────────────
+                        // Same form in all three states. Error message renders
+                        // above the form when present. Submit button text +
+                        // disabled state change on submitting.
+                        <>
+                          {trialStatus === "error" && trialErrorMsg && (
+                            <p
+                              className="landing-pricing-trial-error"
+                              role="alert"
+                              aria-live="assertive"
+                            >
+                              {trialErrorMsg}
+                            </p>
+                          )}
+                          <form
+                            className="landing-pricing-trial-form"
+                            onSubmit={handleTrialSubmit}
+                            noValidate
+                          >
+                            <label
+                              className="landing-pricing-trial-label"
+                              htmlFor="trial-email-input"
+                            >
+                              Email
+                            </label>
+                            <input
+                              id="trial-email-input"
+                              className="landing-pricing-trial-input"
+                              type="email"
+                              name="email"
+                              required
+                              autoComplete="email"
+                              placeholder="you@example.com"
+                              value={trialEmail}
+                              onChange={(e) => setTrialEmail(e.target.value)}
+                              disabled={trialStatus === "submitting"}
+                              aria-invalid={trialStatus === "error"}
+                            />
+                            <button
+                              type="submit"
+                              className="landing-pricing-trial-submit"
+                              disabled={trialStatus === "submitting"}
+                              aria-busy={trialStatus === "submitting"}
+                            >
+                              {trialStatus === "submitting"
+                                ? "Sending…"
+                                : "Email me a code"}
+                            </button>
+                          </form>
+                        </>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>

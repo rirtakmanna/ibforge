@@ -120,7 +120,7 @@ exports.issueTrialCode = onCall(
         if (secondsElapsed < 60) {
           throw new HttpsError(
             "resource-exhausted",
-            "You already requested a code recently. Check your inbox or wait a moment.",
+            "You already requested a code recently. Check your inbox or wait 60 seconds.",
           );
         }
       }

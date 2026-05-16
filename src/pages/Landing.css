@@ -1236,6 +1236,118 @@
   outline-offset: 4px;
 }
 
+/* Submit disabled state — applies during "submitting" and after success.
+   Cursor signals non-interactive; opacity dims without losing readability.
+   Hover/active transforms are nullified so a disabled button does not
+   appear to respond to interaction. */
+.landing-pricing-trial-submit:disabled,
+.landing-pricing-trial-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.landing-pricing-trial-submit:disabled:hover {
+  background: var(--color-electric-blue);
+  border-color: var(--color-electric-blue);
+}
+
+.landing-pricing-trial-submit:disabled:active {
+  transform: none;
+}
+
+/* ─── Error state ──────────────────────────────────────────────────
+   Brand voice: errors are LOUD. The user did the wrong thing OR the
+   server rejected. Either way, the message earns visual weight.
+   Pattern: red-tinted panel (12% red overlay) + full-saturation red
+   text + 3px red left-border accent. Mirrors the audience-card
+   border pattern at section 4, but inlined into the form flow.
+   color-mix() matches the technique used by .landing-pricing-honesty
+   above — keeps variables.css unmodified. */
+
+.landing-pricing-trial-error {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  background: color-mix(in srgb, var(--color-error-red) 12%, transparent);
+  border-left: 3px solid var(--color-error-red);
+  color: var(--color-error-red);
+  font: var(--text-body);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* aria-invalid on the input — subtle border tint when validation fails.
+   The aria-invalid attribute is set by Landing.jsx when trialStatus is
+   "error" (Block 3 of Step 5). This selector picks it up automatically
+   without a separate className. */
+.landing-pricing-trial-input[aria-invalid="true"] {
+  border-color: var(--color-error-red);
+}
+
+.landing-pricing-trial-input[aria-invalid="true"]:focus-visible {
+  outline-color: var(--color-error-red);
+  border-color: var(--color-error-red);
+}
+
+/* ─── Success state ────────────────────────────────────────────────
+   Brand voice: successes are QUIET. The user did the thing right —
+   the presence of the message IS the confirmation. No color accent,
+   no celebration. Just typography hierarchy: headline (white,
+   confident), body (secondary, factual), masked email rendered in
+   mono (treats it as data, not prose), /access link gets electric-
+   blue on hover (same pattern as .landing-pricing-refund-link). */
+
+.landing-pricing-trial-success {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+}
+
+.landing-pricing-trial-success-headline {
+  margin: 0;
+  font: var(--text-h3);
+  font-size: 18px;
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.landing-pricing-trial-success-body {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* Masked email — JetBrains Mono treats it as data, not prose.
+   Slightly tighter size than body so it doesn't dominate the line.
+   Color stays at primary because the value is what the user needs
+   to verify ("did the email go to the right address?"). */
+.landing-pricing-trial-success-email {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* /access link — same underline-on-hover pattern as the refund link.
+   Quiet by default, electric-blue accent on hover/focus. */
+.landing-pricing-trial-success-link {
+  color: var(--color-electric-blue);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 150ms linear;
+}
+
+.landing-pricing-trial-success-link:hover {
+  border-bottom-color: var(--color-electric-blue);
+}
+
+.landing-pricing-trial-success-link:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 3px;
+}
+
 /* ─── Mobile (<768px) — stack cards vertically ─────────────────────── */
 
 @media (max-width: 767px) {
