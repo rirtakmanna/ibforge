@@ -11,9 +11,13 @@
 // prefers-reduced-motion: handled by index.css global block (Phase 1) which stops
 // SMIL animation via animation-play-state. No local override needed.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithGoogle, onAuthChange } from "@/utils/auth";
+import { signInWithGoogle, signOut, onAuthChange } from "@/utils/auth";
+import { getAccessRecord } from "@/utils/dataService";
+import { getAuth } from "firebase/auth";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "@/utils/firebase";
 import "./Login.css";
 
 function GoogleIcon() {
@@ -148,21 +152,72 @@ function errorMessageFor(err) {
   }
 }
 
+// Maps claimCode Cloud Function error codes to user-facing strings.
+function codeErrorMessageFor(err) {
+  const code = err?.code || err?.message || "";
+  if (code.includes("INVALID_CODE"))
+    return "Code not recognised. Check for typos.";
+  if (code.includes("CODE_ALREADY_USED"))
+    return "This code has already been redeemed.";
+  if (code.includes("CODE_EMAIL_MISMATCH"))
+    return "This code was issued for a different email.";
+  if (code.includes("unauthenticated"))
+    return "Sign in first, then enter your code.";
+  return "Couldn't redeem the code. Try again or email hello@ibforge.in.";
+}
+
+// Normalise code input: uppercase, strip anything not A-Z 0-9 or hyphen.
+function normalizeCode(raw) {
+  return raw.toUpperCase().replace(/[^A-Z0-9-]/g, "").trim();
+}
+
 function Login() {
   const navigate = useNavigate();
-  // authState: "unknown" until first onAuthChange callback. If a user is
-  // already signed in, redirect to / immediately rather than letting them
-  // see (and click) the sign-in button uselessly.
+  const codeInputRef = useRef(null);
+
+  // authState:
+  //   "unknown"         → waiting for first onAuthChange callback
+  //   "unauthenticated" → no Firebase user
+  //   "no-access"       → signed in, no access record (Branch 2)
+  //   (redirect)        → signed in + access record → /dashboard immediately
   const [authState, setAuthState] = useState("unknown");
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Branch 1 state
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [errorState, setErrorState] = useState(null);
+  const [signInError, setSignInError] = useState(null);
+
+  // Branch 2 state
+  const [codeInput, setCodeInput] = useState("");
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const [redeemCooldown, setRedeemCooldown] = useState(false);
+  const [codeError, setCodeError] = useState(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthChange((user) => {
-      if (user) {
-        navigate("/", { replace: true });
-      } else {
+    const unsubscribe = onAuthChange(async (user) => {
+      if (!user) {
+        setCurrentUser(null);
         setAuthState("unauthenticated");
+        return;
+      }
+
+      setCurrentUser(user);
+
+      // Check access record to decide which branch to show.
+      // Failure is treated as no-access — user lands on code entry,
+      // which is a recoverable surface.
+      try {
+        const record = await getAccessRecord(user.uid);
+        if (record) {
+          // Has access — go straight to Dashboard.
+          navigate("/dashboard", { replace: true });
+        } else {
+          setAuthState("no-access");
+        }
+      } catch (err) {
+        console.error("Login: access record check failed", err);
+        setAuthState("no-access");
       }
     });
     return () => {
@@ -170,63 +225,180 @@ function Login() {
     };
   }, [navigate]);
 
+  // Focus code input when Branch 2 becomes visible.
+  useEffect(() => {
+    if (authState === "no-access" && codeInputRef.current) {
+      const id = requestAnimationFrame(() => codeInputRef.current?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+    return undefined;
+  }, [authState]);
+
+  // ── Branch 1 handlers ──────────────────────────────────────────────────
+
   async function handleSignIn() {
     if (isSigningIn) return;
-    setErrorState(null);
+    setSignInError(null);
     setIsSigningIn(true);
     try {
       await signInWithGoogle();
-      // Successful sign-in fires onAuthChange above, which navigates to /.
-      // We don't navigate here to avoid a double-navigate race.
+      // onAuthChange fires on success and handles navigation.
     } catch (err) {
-      setErrorState(errorMessageFor(err));
+      setSignInError(errorMessageFor(err));
       setIsSigningIn(false);
     }
   }
 
+  // ── Branch 2 handlers ──────────────────────────────────────────────────
+
+  async function handleRedeem() {
+    if (isRedeeming || redeemCooldown) return;
+    const code = normalizeCode(codeInput);
+    if (!code) return;
+
+    setCodeError(null);
+    setIsRedeeming(true);
+
+    try {
+      const claimCode = httpsCallable(functions, "claimCode");
+      await claimCode({ code });
+      // Success — navigate to Dashboard. Onboarding modal fires there.
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setCodeError(codeErrorMessageFor(err));
+      setIsRedeeming(false);
+      setRedeemCooldown(true);
+      setTimeout(() => setRedeemCooldown(false), 2000);
+    }
+  }
+
+  function handleCodeKeyDown(e) {
+    if (e.key === "Enter") handleRedeem();
+  }
+
+  async function handleSignOut() {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      // onAuthChange fires with null → setAuthState("unauthenticated")
+      // Reset Branch 1 state so the sign-in button is clean on return.
+      setIsSigningIn(false);
+      setSignInError(null);
+    } catch (err) {
+      console.error("Login: sign out failed", err);
+      setIsSigningOut(false);
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────
+
   const isCheckingSession = authState === "unknown";
-  const buttonLabel = isCheckingSession
+
+  // Branch 1 — not signed in
+  const branch1ButtonLabel = isCheckingSession
     ? "CHECKING SESSION…"
     : isSigningIn
     ? "SIGNING IN…"
     : "SIGN IN WITH GOOGLE";
-  const buttonDisabled = isCheckingSession || isSigningIn;
+  const branch1ButtonDisabled = isCheckingSession || isSigningIn;
+
+  // Branch 2 — signed in, no access
+  const redeemDisabled = isRedeeming || redeemCooldown || normalizeCode(codeInput).length === 0;
 
   return (
     <main className="login" role="main">
       <div className="login-card">
         <AtlasLogoAnimated />
-        <p className="login-tagline">
-          An execution-enforced IB Analyst Training OS
-        </p>
-        <button
-          type="button"
-          className="login-button"
-          onClick={handleSignIn}
-          disabled={buttonDisabled}
-          aria-busy={isSigningIn || isCheckingSession}
-        >
-          <GoogleIcon />
-          <span>{buttonLabel}</span>
-        </button>
-        {errorState && (
-          <p
-            role={errorState.severity === "error" ? "alert" : "status"}
-            aria-live="polite"
-            style={{
-              marginTop: "1rem",
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.75rem",
-              letterSpacing: "0.05em",
-              color:
-                errorState.severity === "error"
-                  ? "var(--color-error-red)"
-                  : "var(--color-text-secondary)",
-              textAlign: "center",
-            }}
-          >
-            {errorState.text}
-          </p>
+
+        {/* ── Branch 2: signed in, no access record ── */}
+        {authState === "no-access" && (
+          <>
+            <div className="login-code-header">
+              <p className="login-tagline">Enter your access code</p>
+              <p className="login-code-account">
+                Signed in as{" "}
+                <span className="login-code-email">
+                  {currentUser?.email || ""}
+                </span>
+              </p>
+            </div>
+
+            <div className="login-code-field">
+              <input
+                ref={codeInputRef}
+                type="text"
+                className="login-code-input"
+                placeholder="IBFORGE-2026-XXXX"
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value)}
+                onKeyDown={handleCodeKeyDown}
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                aria-label="Access code"
+                disabled={isRedeeming}
+              />
+              <button
+                type="button"
+                className="login-button login-button--redeem"
+                onClick={handleRedeem}
+                disabled={redeemDisabled}
+                aria-busy={isRedeeming}
+              >
+                <span>
+                  {isRedeeming ? "CHECKING…" : "REDEEM CODE →"}
+                </span>
+              </button>
+            </div>
+
+            {codeError && (
+              <p
+                className="login-code-error"
+                role="alert"
+                aria-live="assertive"
+              >
+                {codeError}
+              </p>
+            )}
+
+            <button
+              type="button"
+              className="login-signout-link"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+            >
+              {isSigningOut ? "Signing out…" : "Wrong account? Sign out →"}
+            </button>
+          </>
+        )}
+
+        {/* ── Branch 1: not signed in (or checking session) ── */}
+        {(authState === "unauthenticated" || authState === "unknown") && (
+          <>
+            <p className="login-tagline">
+              An execution-enforced IB Analyst Training OS
+            </p>
+            <button
+              type="button"
+              className="login-button"
+              onClick={handleSignIn}
+              disabled={branch1ButtonDisabled}
+              aria-busy={isSigningIn || isCheckingSession}
+            >
+              <GoogleIcon />
+              <span>{branch1ButtonLabel}</span>
+            </button>
+            {signInError && (
+              <p
+                role={signInError.severity === "error" ? "alert" : "status"}
+                aria-live="polite"
+                className={`login-error login-error--${signInError.severity}`}
+              >
+                {signInError.text}
+              </p>
+            )}
+          </>
         )}
       </div>
     </main>

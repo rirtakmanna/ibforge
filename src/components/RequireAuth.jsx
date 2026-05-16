@@ -21,7 +21,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { onAuthChange } from "@/utils/auth";
-import { waitForHydration } from "@/utils/dataService";
+import { waitForHydration, getAccessRecord } from "@/utils/dataService";
 
 function LoadingScreen() {
   const LOGO_SIZE = 80;
@@ -55,6 +55,7 @@ function LoadingScreen() {
             display: "inline-block",
           }}
         >
+          {/* Static layer — border + chevron + dash mark */}
           <svg
             width={LOGO_SIZE}
             height={LOGO_SIZE}
@@ -87,6 +88,7 @@ function LoadingScreen() {
               strokeLinejoin="round"
             />
           </svg>
+          {/* Rotor layer — orbiting line, matches nav logo exactly */}
           <svg
             width={LOGO_SIZE}
             height={LOGO_SIZE}
@@ -133,6 +135,9 @@ function LoadingScreen() {
 function RequireAuth({ children }) {
   // undefined = unknown (initial), null = unauthenticated, object = authenticated
   const [user, setUser] = useState(undefined);
+  // null until checked, false = no access record, true = access record exists.
+  // Only meaningful when user is truthy.
+  const [hasAccess, setHasAccess] = useState(null);
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
@@ -144,17 +149,33 @@ function RequireAuth({ children }) {
       setUser(firebaseUser);
 
       if (firebaseUser) {
-        // Authenticated: wait for dataService cache to hydrate before
-        // letting children render. Prevents empty-cache flicker.
-        try {
-          await waitForHydration();
-        } catch (err) {
-          // Defensive: if hydration ever rejects, we still let children
-          // render with an empty cache rather than spinning forever.
-          // Components handle empty data gracefully (Phase 2A behavior).
-          // eslint-disable-next-line no-console
-          console.error("RequireAuth: hydration failed", err);
-        }
+        // Authenticated: in parallel, wait for dataService cache hydration
+        // AND read the user's access record. Both must resolve before we
+        // let children render. Running them in parallel rather than
+        // serially saves a round-trip on cold load.
+        //
+        // Hydration failure is non-fatal (children render with empty cache —
+        // Phase 2A behavior). Access-record read failure is also non-fatal
+        // and treated as "no access" — RequireAuth will redirect to /access,
+        // where the user can re-attempt code redemption. Better to send them
+        // to a recoverable surface than spin forever on a transient error.
+        const [, accessRecord] = await Promise.all([
+          waitForHydration().catch((err) => {
+            // eslint-disable-next-line no-console
+            console.error("RequireAuth: hydration failed", err);
+          }),
+          getAccessRecord(firebaseUser.uid).catch((err) => {
+            // eslint-disable-next-line no-console
+            console.error("RequireAuth: access record read failed", err);
+            return null;
+          }),
+        ]);
+
+        if (cancelled) return;
+        setHasAccess(accessRecord !== null);
+      } else {
+        // Signed out — clear any stale access state from a previous session.
+        setHasAccess(null);
       }
 
       if (cancelled) return;
@@ -167,8 +188,8 @@ function RequireAuth({ children }) {
     };
   }, []);
 
-  // State 1: still waiting for first onAuthChange callback OR hydration.
-  // Do NOT redirect yet — we don't know the auth state.
+  // State 1: still waiting for first onAuthChange callback, hydration, or
+  // access-record read. Do NOT redirect yet — we don't know the full state.
   if (!authReady) {
     return <LoadingScreen />;
   }
@@ -178,7 +199,13 @@ function RequireAuth({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  // State 3: authenticated + hydrated → render protected tree.
+  // State 3: authenticated but no access record → redirect to /login.
+  // /login Branch 2 handles code entry for signed-in users without access.
+  if (hasAccess === false) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // State 4: authenticated + access record exists + hydrated → render protected tree.
   return children;
 }
 

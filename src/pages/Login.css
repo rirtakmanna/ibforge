@@ -149,6 +149,140 @@
   display: block;
 }
 
+/* ── Code entry (Branch 2 — signed in, no access) ── */
+
+.login-code-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+}
+
+.login-code-account {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.login-code-email {
+  color: var(--color-text-primary);
+}
+
+.login-code-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.login-code-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  outline: none;
+  box-sizing: border-box;
+  /* Prevent iOS auto-zoom on focus — font-size must be >= 16px on mobile */
+}
+
+.login-code-input::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+  text-transform: uppercase;
+}
+
+.login-code-input:focus {
+  border-color: var(--color-electric-blue);
+}
+
+.login-code-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Redeem button — secondary style, full width, no Google icon */
+.login-button--redeem {
+  background: transparent;
+  color: var(--color-electric-blue);
+  border: 1px solid var(--color-electric-blue);
+}
+
+.login-button--redeem:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-electric-blue) 10%, transparent);
+}
+
+.login-button--redeem:disabled {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+  cursor: not-allowed;
+}
+
+.login-code-error {
+  margin: 0;
+  width: 100%;
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--color-error-red) 10%, transparent);
+  border-left: 3px solid var(--color-error-red);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--color-error-red);
+  box-sizing: border-box;
+}
+
+/* Wrong account escape hatch — low prominence text link */
+.login-signout-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: calc(-1 * var(--space-sm));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--duration-base) linear;
+}
+
+.login-signout-link:hover:not(:disabled) {
+  color: var(--color-text-primary);
+}
+
+.login-signout-link:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Sign-in error (Branch 1) — replaces the old inline style */
+.login-error {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.login-error--error {
+  color: var(--color-error-red);
+}
+
+.login-error--info {
+  color: var(--color-text-secondary);
+}
+
 /* ── Footnote ── */
 
 .login-footnote {
@@ -175,5 +309,8 @@
   }
   .login-logo-wordmark {
     font-size: 28px;
+  }
+  .login-code-input {
+    font-size: 16px;
   }
 }

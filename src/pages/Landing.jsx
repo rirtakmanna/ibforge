@@ -529,7 +529,7 @@ function Landing() {
   // ───────────────────────────────────────────────────────────────
   // HASH-SCROLL HANDLER
   // Browser native hash-scroll runs before React mounts, so when a user
-  // lands on /#pricing (e.g. from the /access "the pricing section" link),
+  // lands on /#pricing (e.g. from the /login "the pricing section" link),
   // the browser tries to scroll before the section is in the DOM. By the
   // time Landing paints, the moment has passed.
   //
@@ -1468,10 +1468,10 @@ function Landing() {
                             </span>
                             . Enter it at{" "}
                             <a
-                              href="/access"
+                              href="/login"
                               className="landing-pricing-trial-success-link"
                             >
-                              ibforge.in/access
+                              ibforge.in/login
                             </a>{" "}
                             to begin Module 1.
                           </p>
