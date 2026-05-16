@@ -1271,6 +1271,50 @@ export async function getAccessRecord(uid) {
   return data.access;
 }
 
+// ─── Onboarding (Phase 4B) ───────────────────────────────────────────────────
+
+/**
+ * Returns true if the signed-in user has completed the onboarding modal.
+ * Reads the `onboardingComplete` field from the users/{uid} root doc.
+ * Async because it reads Firestore — not cached in the hydration cache since
+ * the onboarding flag is not a frequently-changing value worth subscribing to.
+ *
+ * Returns false on Firestore error or missing field (safe default — show modal).
+ */
+export async function hasCompletedOnboarding() {
+  const uid = cache.currentUserId;
+  if (!uid) return false;
+
+  try {
+    const { getDoc } = await import("firebase/firestore");
+    const userDocRef = doc(db, "users", uid);
+    const snap = await getDoc(userDocRef);
+    if (!snap.exists()) return false;
+    const data = snap.data();
+    return data && data.onboardingComplete === true;
+  } catch (err) {
+    console.error("[dataService] hasCompletedOnboarding failed:", err);
+    return false; // Safe default — show modal if unsure.
+  }
+}
+
+/**
+ * Marks the onboarding modal as complete for the signed-in user.
+ * Writes { onboardingComplete: true } to users/{uid} root doc via merge.
+ * Idempotent — safe to call multiple times.
+ *
+ * Throws on no signed-in user or Firestore write failure.
+ */
+export async function markOnboardingComplete() {
+  const uid = cache.currentUserId;
+  if (!uid) {
+    throw new Error("[dataService] markOnboardingComplete requires signed-in user");
+  }
+
+  const userDocRef = doc(db, "users", uid);
+  await setDoc(userDocRef, { onboardingComplete: true }, { merge: true });
+}
+
 // ─── Browser console exposure (DEV ONLY) ────────────────────────────────────
 // Lets the operator run dataService.markStepComplete("M1-S01") in DevTools
 // for the Phase 1 smoke test. Removed in production builds via Vite's

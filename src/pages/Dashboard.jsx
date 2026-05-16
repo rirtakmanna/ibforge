@@ -37,7 +37,10 @@ import {
   getCurrentPhase,
   getCompletedSteps,
   getNextStep,
+  hasCompletedOnboarding,
+  markOnboardingComplete,
 } from "@/utils/dataService";
+import OnboardingModal from "@/components/OnboardingModal";
 import { roadmapData } from "@/data/roadmapData";
 import PositionCard from "@/components/PositionCard";
 import ExecutionProgressCard from "@/components/ExecutionProgressCard";
@@ -74,7 +77,21 @@ function readSnapshot() {
 
 function Dashboard() {
   const [snapshot, setSnapshot] = useState(readSnapshot);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
+  // Check if the onboarding modal should appear.
+  // Runs once on mount after auth + hydration (guaranteed by RequireAuth gate).
+  useEffect(() => {
+    let cancelled = false;
+    hasCompletedOnboarding().then((done) => {
+      if (!cancelled && !done) setShowOnboarding(true);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleOnboardingDismiss = useCallback(() => {
+    setShowOnboarding(false);
+  }, []);
   // Re-read state when localStorage changes in another tab. Phase 3 swaps
   // this for Firestore listeners.
   useEffect(() => {
@@ -153,6 +170,9 @@ function Dashboard() {
 
   return (
     <div className="dashboard">
+      {showOnboarding && (
+        <OnboardingModal onDismiss={handleOnboardingDismiss} />
+      )}
       {/* ── Row 1 — Position (25fr) | Execution Progress (75fr) ── */}
       <section
         className="dashboard-row1"
