@@ -2,6 +2,13 @@
   "name": "ibforge",
   "private": true,
   "version": "0.0.0",
+  "description": "IBForge — Investment Banking Analyst Training OS",
+  "homepage": "https://ibforge.in",
+  "author": "Rirtak Manna <hello@ibforge.in>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rirtakmanna/ibforge.git"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.0.0"

@@ -389,17 +389,17 @@ const moduleStaticVariants = {
 const landingProof = [
   {
     src: "/landing/03-step-detail.png",
-    alt: "ATLAS Step Detail page showing M4-S37 active with Topic, Open Course, and Mark Complete controls",
+    alt: "IBForge Step Detail page showing M4-S37 active with Topic, Open Course, and Mark Complete controls",
     caption: "A locked step, a real deliverable, a real upload.",
   },
   {
     src: "/landing/04-portfolio.png",
-    alt: "ATLAS Portfolio page showing ITC Limited Trading Comps Workbook deliverable in Module 4",
+    alt: "IBForge Portfolio page showing ITC Limited Trading Comps Workbook deliverable in Module 4",
     caption: "Every uploaded file, organised by step.",
   },
   {
     src: "/landing/05-calendar.png",
-    alt: "ATLAS Calendar page showing scheduled LinkedIn posts on May 2026",
+    alt: "IBForge Calendar page showing scheduled LinkedIn posts on May 2026",
     caption: "LinkedIn posts scheduled the day you finish.",
   },
 ];

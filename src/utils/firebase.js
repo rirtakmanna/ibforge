@@ -38,6 +38,13 @@ if (missing.length > 0) {
   );
 }
 
+// ─── Project identity ──────────────────────────────────────────────────────
+// Firebase project: IBForge (display name — updated Phase 4C.5)
+// Project ID (immutable, set during Phase 0): see VITE_FIREBASE_PROJECT_ID in .env
+// Renaming the project ID is not supported by Google. Migration would require
+// creating a new project and re-importing all data — destructive for live customers.
+// The firebaseConfig values below are unchanged; only this comment block is new.
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
