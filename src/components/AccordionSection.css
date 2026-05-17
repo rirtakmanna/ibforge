@@ -91,6 +91,55 @@
   border-top: 0;
 }
 
+/* ─── Plan lock chip (trial users — Module 2–14) ────────────────── */
+.accordion__plan-lock-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid var(--color-amber, #f59e0b);
+  color: var(--color-amber, #f59e0b);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: var(--tracking-widest);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 150ms linear, color 150ms linear;
+}
+
+.accordion__plan-lock-chip:hover {
+  background: var(--color-amber, #f59e0b);
+  color: var(--color-bg-primary);
+}
+
+.accordion__plan-lock-chip:focus-visible {
+  outline: 2px solid var(--color-amber, #f59e0b);
+  outline-offset: 2px;
+}
+
+/* ─── Plan lock overlay (dims step list for trial users) ────────── */
+.accordion__plan-lock-overlay {
+  position: relative;
+}
+
+.accordion__plan-lock-overlay-inner {
+  /* Steps render at reduced opacity — visible but clearly inaccessible. */
+  opacity: 0.28;
+  pointer-events: none;
+  user-select: none;
+}
+
+.accordion__plan-lock-veil {
+  /* Transparent veil sits on top — catches any click that slips through
+   * pointer-events: none on the inner (shouldn't happen, but belt+braces). */
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  cursor: not-allowed;
+}
+
 /* Mobile — tighter trigger padding. */
 @media (max-width: 767px) {
   .accordion__trigger {

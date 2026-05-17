@@ -46,7 +46,11 @@ service cloud.firestore {
       // intersected with the protected set — if the intersection is non-empty,
       // the client is trying to touch a forbidden field.
       function touchesServerFields() {
-        return request.resource.data.keys().hasAny(['access', 'role', 'codeUsed']);
+        // request.writeFields contains ONLY the keys being written in this
+        // operation — not the full merged document. This is the correct check
+        // for merge writes, where request.resource.data includes pre-existing
+        // fields the client never named.
+        return request.writeFields.hasAny(['access', 'role', 'codeUsed']);
       }
 
       allow read: if isOwner();
@@ -82,13 +86,66 @@ service cloud.firestore {
     // rule allows — which would silently bypass the strict field-level
     // protections in the rule above.
     //
-    // Owner-only, same as Phase 3. Cloud Functions bypass via Admin SDK.
+    // Owner-only. Writes also enforce the trial plan boundary:
+    // trial users may only write to subcollections for steps in
+    // Module 1 (phase 1). The step's phase is encoded in the first
+    // segment of the document path — progress and scheduledPosts use
+    // a single doc ("completedSteps" and a post id respectively), so
+    // we gate by collection name instead. Deliverables use the stepId
+    // as the document id (e.g. "M1-S09") — we extract the module
+    // number from it to enforce the boundary.
+    //
+    // Plan check: reads users/{uid}.access.plan via get(). This costs
+    // one extra read per subcollection write — acceptable for the
+    // security guarantee. Cloud Functions bypass via Admin SDK.
     // ─────────────────────────────────────────────────────────────
     match /users/{userId}/{collection}/{document=**} {
+      function getUserPlan() {
+        let userDoc = get(/databases/$(database)/documents/users/$(userId));
+        return userDoc != null
+               && userDoc.data != null
+               && userDoc.data.access != null
+                 ? userDoc.data.access.plan
+                 : null;
+      }
+
+      // Returns true if the write is permitted under the user's plan.
+      // "full" → always allowed.
+      // null   → no access record yet → deny writes (claimCode hasn't
+      //          run yet, or the record was deleted).
+      // "trial" → allowed only for:
+      //   - progress subcollection (single doc — completedSteps)
+      //     gated further by the stepId inside the payload; but Rules
+      //     cannot inspect array contents cheaply, so we allow the
+      //     collection and rely on the client-side assertPlanAllowsStep
+      //     guard + the deliverables doc-id check below for granularity.
+      //   - deliverables subcollection: document id is the stepId.
+      //     M1 steps have ids starting with "M1-". Any other prefix
+      //     (M2-, M3-, …) is denied for trial users.
+      //   - scheduledPosts subcollection: post ids are
+      //     "{stepId}-day{N}-{index}". Extract the step prefix.
+      //   - all other subcollections (uiState, meta): always allowed
+      //     regardless of plan — they contain no gated content.
+      function planAllowsWrite() {
+        let plan = getUserPlan();
+        // "full" → always allowed.
+        // null   → no access record → deny.
+        // "trial" → deliverables and scheduledPosts gated to M1- prefix;
+        //           all other subcollections (progress, uiState, meta) allowed.
+        return plan == "full"
+          ? true
+          : plan == null
+            ? false
+            : (collection == "deliverables" || collection == "scheduledPosts")
+              ? document.matches("M1-.*")
+              : true;
+      }
+
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null
                    && request.auth.uid == userId
-                   && request.resource.data.size() < 1000000;
+                   && request.resource.data.size() < 1000000
+                   && planAllowsWrite();
     }
   }
 }

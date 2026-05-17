@@ -21,7 +21,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { onAuthChange } from "@/utils/auth";
-import { waitForHydration, getAccessRecord } from "@/utils/dataService";
+import { waitForHydration, getAccessRecord, setCachedPlan } from "@/utils/dataService";
 
 function LoadingScreen() {
   const LOGO_SIZE = 80;
@@ -172,6 +172,12 @@ function RequireAuth({ children }) {
         ]);
 
         if (cancelled) return;
+
+        // Populate the synchronous plan cache so components can call
+        // getUserPlan() without an async read. If no access record exists,
+        // plan stays null (treated as "trial" — most restrictive default).
+        setCachedPlan(accessRecord ? (accessRecord.plan ?? null) : null);
+
         setHasAccess(accessRecord !== null);
       } else {
         // Signed out — clear any stale access state from a previous session.

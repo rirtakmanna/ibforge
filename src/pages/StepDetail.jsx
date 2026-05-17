@@ -23,6 +23,7 @@ import {
   getCompletedSteps,
   getDeliverables,
   getNextStep,
+  getUserPlan,
   markStepComplete,
   scheduleLinkedInPosts,
 } from "@/utils/dataService";
@@ -99,9 +100,15 @@ function StepDetail() {
   }, [step, refreshKey]);
 
   // Redirect locked steps to /roadmap.
+  // Also redirect trial users who directly navigate to a non-phase-1 step.
   useEffect(() => {
     if (!step) return;
     if (status === "locked") {
+      navigate("/roadmap", { replace: true });
+      return;
+    }
+    const plan = getUserPlan();
+    if (plan === "trial" && step.phase !== 1) {
       navigate("/roadmap", { replace: true });
     }
   }, [step, status, navigate]);

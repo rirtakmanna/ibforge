@@ -45,6 +45,7 @@ function AccordionSection({
   header,
   triggerLabel,
   defaultOpen = false,
+  isPlanLocked = false,
   children,
 }) {
   // Resolve initial state from persisted UI state, with defaultOpen as fallback.
@@ -96,6 +97,17 @@ function AccordionSection({
         onClick={handleToggle}
       >
         <div className="accordion__header-slot">{header}</div>
+        {isPlanLocked && (
+          <a
+            href="/#pricing"
+            className="accordion__plan-lock-chip"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Upgrade to full access"
+            tabIndex={0}
+          >
+            TRIAL — UPGRADE →
+          </a>
+        )}
         <motion.span
           className="accordion__chevron"
           aria-hidden="true"
@@ -125,7 +137,19 @@ function AccordionSection({
               initial="hidden"
               animate="show"
             >
-              {children}
+              {isPlanLocked ? (
+                <div
+                  className="accordion__plan-lock-overlay"
+                  aria-hidden="true"
+                >
+                  <div className="accordion__plan-lock-overlay-inner">
+                    {children}
+                  </div>
+                  <div className="accordion__plan-lock-veil" />
+                </div>
+              ) : (
+                children
+              )}
             </motion.div>
           </motion.div>
         )}

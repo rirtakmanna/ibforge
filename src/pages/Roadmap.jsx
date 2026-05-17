@@ -20,7 +20,11 @@ import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { roadmapData } from "@/data/roadmapData";
-import { getCurrentPhase, getCompletedSteps } from "@/utils/dataService";
+import {
+  getCurrentPhase,
+  getCompletedSteps,
+  getUserPlan,
+} from "@/utils/dataService";
 import { getModuleTitle } from "@/data/moduleTitles";
 import AccordionSection from "@/components/AccordionSection";
 import PhaseHeader from "@/components/PhaseHeader";
@@ -125,6 +129,10 @@ function Roadmap() {
           const storageKey = `accordion:roadmap:M${mod.number}`;
           const isDefaultOpen = mod.number === defaultOpenPhase;
           const triggerLabel = `Module ${mod.number} — ${mod.title}, ${mod.completed} of ${mod.total} steps complete`;
+          // Trial users can only interact with Module 1.
+          // getUserPlan() is synchronous — safe to call in render.
+          const plan = getUserPlan();
+          const isPlanLocked = plan === "trial" && mod.number !== 1;
 
           return (
             <AccordionSection
@@ -132,6 +140,7 @@ function Roadmap() {
               storageKey={storageKey}
               triggerLabel={triggerLabel}
               defaultOpen={isDefaultOpen}
+              isPlanLocked={isPlanLocked}
               header={
                 <PhaseHeader
                   moduleNumber={mod.number}

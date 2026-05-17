@@ -105,6 +105,10 @@ const cache = {
   deliverables: {}, // { [stepId]: Deliverable[] }
   scheduledPosts: [],
   currentUserId: null,
+  // Plan: "trial" | "full" | null. Populated by RequireAuth calling
+  // setCachedPlan() after it reads the access record. Null until then.
+  // Components read via getUserPlan() — never access cache directly.
+  plan: null,
   isHydrated: false,
   unsubscribers: [],
   hydrationResolvers: null,
@@ -144,6 +148,7 @@ function clearCache() {
   cache.deliverables = {};
   cache.scheduledPosts = [];
   cache.currentUserId = null;
+  cache.plan = null;
   cache.isHydrated = false;
   cache.firstSnapshotFired = {
     completedSteps: false,
@@ -284,6 +289,33 @@ export function waitForHydration() {
   return cache.hydrationPromise;
 }
 
+// ─── Plan API (Phase 4B) ─────────────────────────────────────────────────────
+
+/**
+ * Returns the user's current plan: "trial" | "full" | null.
+ * null means plan has not been loaded yet (pre-hydration) — treat as trial
+ * in UI code (most restrictive safe default).
+ *
+ * Set by RequireAuth after it reads the access record. Cleared on sign-out.
+ * Synchronous — safe to call from render without useEffect.
+ */
+export function getUserPlan() {
+  return cache.plan;
+}
+
+/**
+ * Called by RequireAuth after it reads the access record, passing the plan
+ * string through so components can read it synchronously via getUserPlan().
+ * Only RequireAuth should call this — no component ever calls it directly.
+ */
+export function setCachedPlan(plan) {
+  if (plan !== "trial" && plan !== "full" && plan !== null) {
+    console.warn(`[dataService] setCachedPlan: unexpected plan value "${plan}" — ignoring`);
+    return;
+  }
+  cache.plan = plan;
+}
+
 // ─── Schema version ─────────────────────────────────────────────────────────
 
 export function getSchemaVersion() {
@@ -340,9 +372,23 @@ export function getCompletedSteps() {
 }
 
 /**
- * Marks a step complete. Validates id exists in roadmapData.
- * Enforces Pattern B chain rule: a Pattern B step cannot complete unless
- * all earlier Pattern B steps in the same learnChain are already complete.
+ * Throws if the user's cached plan is "trial" and the step's phase is not 1.
+ * Called before any mutating operation that writes step-scoped data.
+ * Silent no-op if plan is null (pre-hydration) or "full".
+ */
+function assertPlanAllowsStep(stepId) {
+  const plan = cache.plan;
+  if (!plan || plan === "full") return; // full or unknown — allow
+  // trial: only phase 1 steps are permitted
+  const step = roadmapData.find((s) => s.id === stepId);
+  if (step && step.phase !== 1) {
+    throw new Error(
+      `[dataService] trial plan does not allow writes for Module ${step.phase} steps. Upgrade to full access.`,
+    );
+  }
+}
+
+/**
  *
  * Phase 3: writes to Firestore users/{uid}/progress/completedSteps.
  * The onSnapshot listener will echo the write back into cache.completedSteps,
@@ -353,6 +399,7 @@ export function getCompletedSteps() {
  */
 export async function markStepComplete(stepId) {
   assertValidStepId(stepId);
+  assertPlanAllowsStep(stepId);
 
   const uid = cache.currentUserId;
   if (!uid) {
@@ -646,6 +693,7 @@ export function getDeliverables(stepId) {
  */
 export async function saveDeliverable(stepId, file) {
   assertValidStepId(stepId);
+  assertPlanAllowsStep(stepId);
 
   const uid = cache.currentUserId;
   if (!uid) {
@@ -1135,6 +1183,7 @@ export async function saveEnhancedPostForId(postId, enhancedContent) {
  */
 export async function scheduleLinkedInPosts(stepId, posts, completionDate) {
   assertValidStepId(stepId);
+  assertPlanAllowsStep(stepId);
   if (!Array.isArray(posts)) {
     throw new Error("[dataService] scheduleLinkedInPosts requires posts array");
   }
@@ -1346,5 +1395,8 @@ if (typeof window !== "undefined" && !import.meta.env.PROD) {
     // Schema version
     getSchemaVersion,
     setSchemaVersion,
+    // Plan
+    getUserPlan,
+    setCachedPlan,
   };
 }
