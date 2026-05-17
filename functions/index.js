@@ -313,6 +313,78 @@ exports.claimCode = onCall(
   },
 );
 
+// ─── notifyAdminOfSubmission ─────────────────────────────────────────────────
+// Firestore-triggered function. Fires on new submission doc creation.
+// Sends admin notification email via Resend to hello@ibforge.in.
+//
+// Deployment:
+//   firebase deploy --only functions:notifyAdminOfSubmission
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+
+exports.notifyAdminOfSubmission = onDocumentCreated(
+  {
+    document: "submissions/{submissionId}",
+    region: "asia-south2",
+    secrets: [RESEND_API_KEY],
+  },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) {
+      logger.warn("[notifyAdmin] No data on new submission doc — skipping.");
+      return;
+    }
+
+    const { name, email, utr, submittedAt } = data;
+
+    let formattedDate = "Unknown";
+    try {
+      const d = submittedAt?.toDate?.() ?? new Date(submittedAt);
+      formattedDate = d.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      // Non-critical — email still sends with "Unknown" date.
+    }
+
+    const emailBody = `New paid submission pending verification.
+
+Name:  ${name ?? "—"}
+Email: ${email ?? "—"}
+UTR:   ${utr ?? "—"}
+Date:  ${formattedDate} IST
+
+Review at https://ibforge.in/admin`;
+
+    try {
+      const { Resend } = require("resend");
+      const resend = new Resend(RESEND_API_KEY.value());
+
+      const { error: resendError } = await resend.emails.send({
+        from: "IBForge <noreply@ibforge.in>",
+        to: ["hello@ibforge.in"],
+        subject: `New IBForge submission — ${name ?? "unknown"}`,
+        text: emailBody,
+      });
+
+      if (resendError) {
+        logger.error("[notifyAdmin] Resend error:", JSON.stringify(resendError));
+        // Non-retryable — submission is already in Firestore.
+        return;
+      }
+
+      logger.info(`[notifyAdmin] Admin notification sent for submission from ${email}`);
+    } catch (err) {
+      logger.error("[notifyAdmin] failed:", err.message);
+      // Non-retryable — do not throw, do not retry.
+    }
+  }
+);
+
 exports.deleteAccount = onCall(
   {
     timeoutSeconds: 540,

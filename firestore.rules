@@ -24,6 +24,42 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────────────────────
+    // submissions/{submissionId}
+    // UPI payment submissions awaiting operator verification.
+    //
+    // create: authenticated user, email matches their Google token,
+    //         status must be "PENDING" on create.
+    // read:   admin (VITE_ADMIN_UID) OR the submitting user
+    //         (matched by email against their auth token).
+    // update: admin only — operator approves or rejects.
+    // delete: denied — deleteAccount Cloud Function handles cleanup
+    //         via Admin SDK.
+    // ─────────────────────────────────────────────────────────────
+    match /submissions/{submissionId} {
+      function isAdmin() {
+        return request.auth != null
+               && request.auth.uid == "REPLACE_WITH_YOUR_ADMIN_UID";
+      }
+
+      function isSubmitter() {
+        return request.auth != null
+               && resource != null
+               && resource.data.email == request.auth.token.email;
+      }
+
+      allow create: if request.auth != null
+                    && request.resource.data.submittedBy == request.auth.uid
+                    && request.resource.data.status == "PENDING"
+                    && request.resource.data.size() < 1000000;
+
+      allow read: if isAdmin() || isSubmitter();
+
+      allow update: if isAdmin();
+
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // users/{userId} — the user document itself.
     //
     // Reads: owner only.

@@ -1686,6 +1686,215 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   UPI PAYMENT FORM (Phase 4C — Full Access card accordion)
+   Shares .landing-pricing-trial-* classes for inputs, labels, submit
+   button, close button, and error state. New classes below cover the
+   UPI-specific panels and elements only.
+═══════════════════════════════════════════════════════════════════════ */
+
+.landing-upi-form-wrap {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* ─── Panel headings ────────────────────────────────────────────── */
+
+.landing-upi-panel-heading {
+  margin: 0 0 var(--space-md) 0;
+  font: var(--text-label);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* ─── Panel A — Pay ─────────────────────────────────────────────── */
+
+.landing-upi-pay-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+}
+
+.landing-upi-id-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.landing-upi-id {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+  user-select: all; /* lets user tap-select on mobile if clipboard fails */
+}
+
+.landing-upi-copy-btn {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 6px 12px;
+  font: var(--text-micro);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-electric-blue);
+  cursor: pointer;
+  transition: background-color 150ms linear, border-color 150ms linear;
+  white-space: nowrap;
+}
+
+.landing-upi-copy-btn:hover {
+  background: var(--color-electric-blue-10);
+  border-color: var(--color-electric-blue);
+}
+
+.landing-upi-copy-btn:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 3px;
+}
+
+.landing-upi-amount {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-warning-amber);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+}
+
+.landing-upi-amount-note {
+  margin: 0;
+  font: var(--text-body);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.landing-upi-after-note {
+  margin: var(--space-xs) 0 0 0;
+  font: var(--text-body);
+  font-size: 13px;
+  color: var(--color-text-disabled);
+  font-style: italic;
+}
+
+/* ─── Panel B — Submit ──────────────────────────────────────────── */
+
+.landing-upi-submit-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-upi-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* File input — styled to match the text inputs visually */
+.landing-upi-file-input {
+  appearance: none;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 10px var(--space-md);
+  color: var(--color-text-secondary);
+  font: var(--text-body);
+  font-size: 14px;
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 150ms linear;
+}
+
+.landing-upi-file-input:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.landing-upi-file-input:focus-visible {
+  border-color: var(--color-electric-blue);
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+.landing-upi-file-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Selected filename — shows below the file input once a file is chosen */
+.landing-upi-file-name {
+  margin: 0;
+  font: var(--text-data);
+  font-size: 12px;
+  color: var(--color-electric-blue);
+  letter-spacing: var(--tracking-tight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Caption below the submit button */
+.landing-upi-caption {
+  margin: var(--space-xs) 0 0 0;
+  font: var(--text-body);
+  font-size: 12px;
+  color: var(--color-text-disabled);
+  text-align: center;
+}
+
+/* ─── Success state ─────────────────────────────────────────────── */
+
+.landing-upi-success {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: var(--space-md) 0;
+}
+
+.landing-upi-success-headline {
+  margin: 0;
+  font: var(--text-h3);
+  font-size: 18px;
+  letter-spacing: var(--tracking-tighter);
+  color: var(--color-text-primary);
+}
+
+.landing-upi-success-body {
+  margin: 0;
+  font: var(--text-body);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.landing-upi-success-email {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* ─── Mobile (<768px) ───────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .landing-upi-id {
+    font-size: 13px;
+  }
+
+  .landing-upi-amount {
+    font-size: 24px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    SECTION 10 — FOOTER
    Extracted to src/components/landing/LandingFooter.css in Chat 7
    Step 7A STEP 3 (Phase 4A). All .landing-footer-* rules now live

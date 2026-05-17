@@ -21,11 +21,14 @@
 //   No exclamation marks. No emoji. No congratulatory language.
 //   Short sentences. Active voice. State facts not feelings.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { httpsCallable } from "firebase/functions";
-import { functions } from "@/utils/firebase";
+import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { functions, firestore as db, storage } from "@/utils/firebase";
 import LandingNav from "@/components/landing/LandingNav";
 import LandingFooter from "@/components/landing/LandingFooter";
 import BenefitCard from "@/components/landing/BenefitCard";
@@ -686,12 +689,171 @@ function Landing() {
     }
   };
 
+   // ───────────────────────────────────────────────────────────────
+  // SECTION 7 — UPI Payment Form state (Phase 4C)
+  //
+  // isUpiFormOpen: drives the inline accordion on the Full Access card.
+  //   Clicking "Pay ₹1,999 via UPI →" opens it; clicking again collapses.
+  //
+  // upiForm: controlled form fields.
+  //
+  // upiStatus state machine:
+  //   "idle"        — form visible, ready for input
+  //   "submitting"  — upload + Firestore write in flight; button disabled
+  //   "success"     — submission received; form replaced by confirmation
+  //   "error"       — inline error above form; user can retry
+  //
+  // upiCopied: clipboard feedback for the UPI ID copy button.
+  // ───────────────────────────────────────────────────────────────
+  const [isUpiFormOpen, setIsUpiFormOpen] = useState(false);
+  const [upiForm, setUpiForm] = useState({
+    name: "",
+    utr: "",
+    screenshot: null,
+  });
+  const [upiStatus, setUpiStatus] = useState("idle");
+  const [upiErrorMsg, setUpiErrorMsg] = useState("");
+  const [upiCopied, setUpiCopied] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
+  const screenshotInputRef = useRef(null);
+
+  const closeUpiForm = () => {
+    setIsUpiFormOpen(false);
+    setUpiStatus("idle");
+    setUpiErrorMsg("");
+    setUpiForm({ name: "", utr: "", screenshot: null });
+    setUpiCopied(false);
+    setSubmittedEmail("");
+    if (screenshotInputRef.current) screenshotInputRef.current.value = "";
+  };
+
+  const handleUpiCopy = async () => {
+    try {
+      await navigator.clipboard.writeText("7906949133@kotakbank");
+      setUpiCopied(true);
+      setTimeout(() => setUpiCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable — silent fail; user can select manually.
+    }
+  };
+
+  const handleUpiFormChange = (field) => (e) => {
+    setUpiForm((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleScreenshotChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setUpiForm((prev) => ({ ...prev, screenshot: file }));
+  };
+
+  const handleUpiSubmit = async (e) => {
+    e.preventDefault();
+    if (upiStatus === "submitting") return;
+
+    // ── Client-side validation ──────────────────────────────────
+    const name = upiForm.name.trim();
+    const utr = upiForm.utr.trim();
+    // Email sourced from Google auth after sign-in below — not from form input.
+    let email = "";
+    const screenshot = upiForm.screenshot;
+
+    if (!name) {
+      setUpiStatus("error");
+      setUpiErrorMsg("Name is required.");
+      return;
+    }
+    
+    if (!utr || utr.length < 12 || utr.length > 22) {
+      setUpiStatus("error");
+      setUpiErrorMsg("UTR must be 12–22 characters. Find it in your UPI app transaction history.");
+      return;
+    }
+    if (!screenshot) {
+      setUpiStatus("error");
+      setUpiErrorMsg("Screenshot is required.");
+      return;
+    }
+    if (screenshot.size > 5 * 1024 * 1024) {
+      setUpiStatus("error");
+      setUpiErrorMsg("Screenshot must be under 5MB.");
+      return;
+    }
+    if (!screenshot.type.startsWith("image/")) {
+      setUpiStatus("error");
+      setUpiErrorMsg("Screenshot must be an image file (JPG, PNG, or WebP).");
+      return;
+    }
+
+    setUpiStatus("submitting");
+    setUpiErrorMsg("");
+
+    try {
+      // ── Require Google sign-in — inline popup if not signed in ──
+      const auth = getAuth();
+      let user = auth.currentUser;
+      if (!user) {
+        try {
+          const provider = new GoogleAuthProvider();
+          const result = await signInWithPopup(auth, provider);
+          user = result.user;
+        } catch {
+          setUpiStatus("error");
+          setUpiErrorMsg("Sign-in cancelled. Complete Google sign-in to submit your payment.");
+          return;
+        }
+      }
+      // Email sourced from authenticated Google account — not form input.
+      email = user.email ?? "";
+
+      // Duplicate UTR check removed from client — Firestore rules block
+      // cross-collection queries from non-admin users. Operator catches
+      // duplicates manually in /admin during verification.
+
+      // ── Upload screenshot to Storage ────────────────────────────
+      const submissionId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const storageRef = ref(storage, `submissions/${submissionId}/${screenshot.name}`);
+      await uploadBytes(storageRef, screenshot);
+      const screenshotPath = `submissions/${submissionId}/${screenshot.name}`;
+
+      // ── Write Firestore doc ─────────────────────────────────────
+      await addDoc(collection(db, "submissions"), {
+        name,
+        email,
+        utr,
+        screenshotPath,
+        submittedAt: serverTimestamp(),
+        status: "PENDING",
+        reviewedAt: null,
+        reviewedBy: null,
+        codeIssued: null,
+        rejectReason: null,
+        submittedBy: user.uid,
+      });
+
+      // ── Notify admin via Cloud Function ────────────────────────
+      try {
+        const notifyAdmin = httpsCallable(functions, "notifyAdminOfSubmission");
+        await notifyAdmin({ submissionId, name, email });
+      } catch {
+        // Admin notification failure is non-blocking — submission is
+        // already in Firestore. Operator can check the queue manually.
+        // eslint-disable-next-line no-console
+        console.warn("[notifyAdmin] failed — submission still recorded");
+      }
+
+      setSubmittedEmail(email);
+      setUpiStatus("success");
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("[upi-submit]", err);
+      setUpiStatus("error");
+      setUpiErrorMsg("Submission failed. Check your connection and try again, or email hello@ibforge.in.");
+    }
+  };
+
   const handleUpiPay = (e) => {
     e.preventDefault();
-    // TODO Phase 4C: open UPI checkout flow (likely a Razorpay redirect
-    // or upi:// intent on mobile). Phase 4A: no-op.
-    // eslint-disable-next-line no-console
-    console.log("[upi-pay-placeholder] checkout requested");
+    setIsUpiFormOpen((prev) => !prev);
   };
 
   return (
@@ -1596,13 +1758,148 @@ function Landing() {
                 </p>
               </motion.aside>
 
-              <button
-                type="button"
-                className="landing-pricing-cta landing-pricing-cta--full"
-                onClick={handleUpiPay}
-              >
-                Pay ₹1,999 via UPI →
-              </button>
+              {/* UPI Payment accordion — Phase 4C.
+                  Clicking "Pay ₹1,999 via UPI →" expands this inline.
+                  AnimatePresence mode="wait" swaps CTA ↔ form in place. */}
+              <AnimatePresence mode="wait" initial={false}>
+                {!isUpiFormOpen ? (
+                  <motion.button
+                    key="upi-cta"
+                    type="button"
+                    className="landing-pricing-cta landing-pricing-cta--full"
+                    onClick={handleUpiPay}
+                    variants={prefersReducedMotion ? moduleStaticVariants : trialAccordionVariants}
+                    initial="collapsed"
+                    animate="expanded"
+                    exit="collapsed"
+                  >
+                    Pay ₹1,999 via UPI →
+                  </motion.button>
+                ) : (
+                  <motion.div
+                    key="upi-form"
+                    className="landing-upi-form-wrap"
+                    variants={prefersReducedMotion ? moduleStaticVariants : trialAccordionVariants}
+                    initial="collapsed"
+                    animate="expanded"
+                    exit="collapsed"
+                  >
+                    <button
+                      type="button"
+                      className="landing-pricing-trial-close"
+                      onClick={closeUpiForm}
+                    >
+                      ← Close
+                    </button>
+
+                    {upiStatus === "success" ? (
+                      <div className="landing-upi-success" role="status" aria-live="polite">
+                        <p className="landing-upi-success-headline">Submission received.</p>
+                        <p className="landing-upi-success-body">
+                          We&apos;ll verify and email your code to{" "}
+                          <span className="landing-upi-success-email">{maskEmail(submittedEmail)}</span>{" "}
+                          within 24 hours. Check spam if you don&apos;t see it.
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* ── PANEL A — Pay ───────────────────────────── */}
+                        <div className="landing-upi-pay-panel">
+                          <p className="landing-upi-panel-heading">Send payment via UPI</p>
+                          <div className="landing-upi-id-row">
+                            <span className="landing-upi-id">7906949133@kotakbank</span>
+                            <button
+                              type="button"
+                              className="landing-upi-copy-btn"
+                              onClick={handleUpiCopy}
+                              aria-label="Copy UPI ID to clipboard"
+                            >
+                              {upiCopied ? "Copied ✓" : "Copy"}
+                            </button>
+                          </div>
+                          <p className="landing-upi-amount">₹1,999</p>
+                          <p className="landing-upi-amount-note">
+                            (₹1,999 for first 20 customers — if applicable, send ₹1,999)
+                          </p>
+                          <p className="landing-upi-after-note">
+                            After sending, fill the form below.
+                          </p>
+                        </div>
+
+                        {/* ── PANEL B — Submit ────────────────────────── */}
+                        <div className="landing-upi-submit-panel">
+                          <p className="landing-upi-panel-heading">Submit your transaction reference</p>
+
+                          {upiStatus === "error" && upiErrorMsg && (
+                            <p className="landing-pricing-trial-error" role="alert" aria-live="assertive">
+                              {upiErrorMsg}
+                            </p>
+                          )}
+
+                          <form className="landing-upi-form" onSubmit={handleUpiSubmit} noValidate>
+                            <label className="landing-pricing-trial-label" htmlFor="upi-name">Name</label>
+                            <input
+                              id="upi-name"
+                              className="landing-pricing-trial-input"
+                              type="text"
+                              required
+                              autoComplete="name"
+                              placeholder="Your full name"
+                              value={upiForm.name}
+                              onChange={handleUpiFormChange("name")}
+                              disabled={upiStatus === "submitting"}
+                            />
+
+                            
+
+                            <label className="landing-pricing-trial-label" htmlFor="upi-utr">UTR / Transaction ID</label>
+                            <input
+                              id="upi-utr"
+                              className="landing-pricing-trial-input"
+                              type="text"
+                              required
+                              placeholder="12–22 character reference from your UPI app"
+                              value={upiForm.utr}
+                              onChange={handleUpiFormChange("utr")}
+                              disabled={upiStatus === "submitting"}
+                            />
+
+                            <label className="landing-pricing-trial-label" htmlFor="upi-screenshot">
+                              Payment screenshot
+                            </label>
+                            <input
+                              id="upi-screenshot"
+                              className="landing-upi-file-input"
+                              type="file"
+                              required
+                              accept="image/jpeg,image/png,image/webp"
+                              onChange={handleScreenshotChange}
+                              disabled={upiStatus === "submitting"}
+                              ref={screenshotInputRef}
+                            />
+                            {upiForm.screenshot && (
+                              <p className="landing-upi-file-name">{upiForm.screenshot.name}</p>
+                            )}
+
+                            <button
+                              type="submit"
+                              className="landing-pricing-trial-submit"
+                              disabled={upiStatus === "submitting"}
+                              aria-busy={upiStatus === "submitting"}
+                            >
+                              {upiStatus === "submitting" ? "Submitting…" : "Submit for verification"}
+                            </button>
+
+                            <p className="landing-upi-caption">
+                              Code will be emailed within 24 hours after verification.
+                            </p>
+                          </form>
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.article>
           </motion.div>
 
