@@ -27,7 +27,7 @@ import "./Layout.css";
 //   Calendar  → Calendar    (calendar)
 // Locked once — do not swap icon styles mid-project.
 const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", Icon: LayoutGrid },
+  { to: "/dashboard", label: "Dashboard", Icon: LayoutGrid },
   { to: "/roadmap", label: "Roadmap", Icon: ListChecks },
   { to: "/portfolio", label: "Portfolio", Icon: FolderOpen },
   { to: "/calendar", label: "Calendar", Icon: Calendar },
@@ -138,7 +138,7 @@ function Layout() {
       {/* Desktop + Tablet top bar */}
       <header className="layout-top" role="banner">
         <div className="layout-top-inner">
-          <NavLink to="/" end className="layout-brand" aria-label="IBForge — Dashboard">
+          <NavLink to="/dashboard" className="layout-brand" aria-label="IBForge — Dashboard">
             <span className="layout-brand-mark" aria-hidden="true">
               <svg
                 className="layout-logo-static"
@@ -258,7 +258,7 @@ function Layout() {
          Overrides Brand System §Mobile Navigation (which specifies avatar-left).
          Reason: operator preference; dropdown anchored right to prevent overflow. */}
       <header className="layout-mobile-top" role="banner" aria-label="IBForge">
-        <NavLink to="/" end className="layout-mobile-brand" aria-label="IBForge — Dashboard">
+        <NavLink to="/dashboard" className="layout-mobile-brand" aria-label="IBForge — Dashboard">
           <svg
             className="layout-logo-static"
             width="32"
