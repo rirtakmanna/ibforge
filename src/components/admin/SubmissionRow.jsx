@@ -1,3 +1,5 @@
+// src/components/admin/SubmissionRow.jsx
+
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { getDownloadURL, ref } from 'firebase/storage';
