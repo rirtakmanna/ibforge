@@ -9,7 +9,8 @@ service cloud.firestore {
     // collection via the Admin SDK, which bypasses these rules.
     // ─────────────────────────────────────────────────────────────
     match /access-codes/{code} {
-      allow read: if false;
+      allow read: if request.auth != null
+                  && request.auth.uid == "EkrdYX5YxEe23ObfGno7m8duqEx2";
       allow write: if false;
     }
 
@@ -38,7 +39,7 @@ service cloud.firestore {
     match /submissions/{submissionId} {
       function isAdmin() {
         return request.auth != null
-               && request.auth.uid == "REPLACE_WITH_YOUR_ADMIN_UID";
+               && request.auth.uid == "EkrdYX5YxEe23ObfGno7m8duqEx2";
       }
 
       function isSubmitter() {

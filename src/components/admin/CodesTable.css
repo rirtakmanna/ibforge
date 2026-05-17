@@ -1,0 +1,56 @@
+.codes-table__controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.codes-table__search {
+  min-width: 200px;
+  font-size: 12px;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.codes-table__code {
+  color: var(--color-electric-blue);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+/* Plan chips */
+.admin__status-chip--plan-full {
+  color: var(--color-electric-blue);
+  border-color: var(--color-electric-blue);
+  background: var(--color-electric-blue-05);
+}
+
+.admin__status-chip--plan-trial {
+  color: var(--color-warning-amber);
+  border-color: var(--color-warning-amber);
+  background: rgba(255, 184, 0, 0.05);
+}
+
+/* Used/Active chips (for codes table) */
+.admin__status-chip--active {
+  color: var(--color-success-green);
+  border-color: var(--color-success-green);
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.admin__status-chip--used {
+  color: var(--color-text-disabled);
+  border-color: var(--color-border);
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .codes-table__controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .codes-table__search {
+    width: 100%;
+    min-width: 0;
+  }
+}

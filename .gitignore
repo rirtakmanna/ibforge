@@ -15,3 +15,5 @@ functions/.runtimeconfig.json
 .firebase/
 # Local Netlify folder
 .netlify
+
+functions/.env

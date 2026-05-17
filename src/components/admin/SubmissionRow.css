@@ -1,0 +1,99 @@
+.submission-row__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 120px;
+}
+
+.submission-row__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px var(--space-sm);
+  font: var(--text-terminal);
+  font-size: 11px;
+  letter-spacing: var(--tracking-wide);
+  border-radius: 0;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
+  transition: color 150ms linear, background 150ms linear, border-color 150ms linear;
+  white-space: nowrap;
+}
+
+.submission-row__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.submission-row__btn--approve {
+  color: var(--color-success-green);
+  border-color: var(--color-success-green);
+}
+
+.submission-row__btn--approve:hover:not(:disabled) {
+  background: rgba(0, 255, 136, 0.1);
+}
+
+.submission-row__btn--reject {
+  color: var(--color-error-red);
+  border-color: var(--color-error-red);
+}
+
+.submission-row__btn--reject:hover:not(:disabled) {
+  background: rgba(255, 51, 102, 0.1);
+}
+
+.submission-row__btn--reject-confirm {
+  color: var(--color-error-red);
+  border-color: var(--color-error-red);
+}
+
+.submission-row__btn--reject-confirm:hover:not(:disabled) {
+  background: rgba(255, 51, 102, 0.1);
+}
+
+.submission-row__btn--cancel {
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+
+.submission-row__btn--cancel:hover {
+  color: var(--color-text-primary);
+}
+
+.submission-row__screenshot-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font: var(--text-terminal);
+  font-size: 11px;
+  letter-spacing: var(--tracking-wide);
+  padding: 4px var(--space-sm);
+  cursor: pointer;
+  border-radius: 0;
+  transition: color 150ms linear, border-color 150ms linear;
+}
+
+.submission-row__screenshot-btn:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
+}
+
+.submission-row__reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.submission-row__reject-input {
+  min-width: 0;
+  width: 100%;
+  font-size: 11px;
+  padding: 4px var(--space-sm);
+}
+
+.submission-row__reject-actions {
+  display: flex;
+  gap: var(--space-xs);
+}

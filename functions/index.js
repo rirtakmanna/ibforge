@@ -385,6 +385,274 @@ Review at https://ibforge.in/admin`;
   }
 );
 
+// ─── approveSubmission ────────────────────────────────────────────────────────
+// Callable — admin only. Approves a pending submission, generates a full-access
+// code, writes it to access-codes, updates the submission doc, emails the customer.
+// All Firestore work is in a single transaction.
+exports.approveSubmission = onCall(
+  {
+    region: "asia-south2",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: [RESEND_API_KEY],
+    enforceAppCheck: false,
+  },
+  async (request) => {
+    const adminUid = process.env.IBFORGE_ADMIN_UID;
+    if (!request.auth) throw new HttpsError("unauthenticated", "Sign in required.");
+    if (request.auth.uid !== adminUid) throw new HttpsError("permission-denied", "Not authorised.");
+
+    const { submissionId } = request.data;
+    if (typeof submissionId !== "string" || submissionId.length === 0) {
+      throw new HttpsError("invalid-argument", "submissionId required.");
+    }
+
+    const db = admin.firestore();
+    const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+    function generateCode() {
+      let s = "";
+      for (let i = 0; i < 4; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+      return `IBFORGE-2026-${s}`;
+    }
+
+    let code;
+    let submissionEmail;
+
+    await db.runTransaction(async (tx) => {
+      const subRef = db.collection("submissions").doc(submissionId);
+      const subSnap = await tx.get(subRef);
+      if (!subSnap.exists) throw new HttpsError("not-found", "Submission not found.");
+      const sub = subSnap.data();
+      if (sub.status !== "PENDING") {
+        throw new HttpsError("failed-precondition", `Submission is already ${sub.status}.`);
+      }
+      submissionEmail = sub.email;
+
+      let attempts = 0;
+      let codeRef;
+      while (attempts < 5) {
+        code = generateCode();
+        codeRef = db.collection("access-codes").doc(code);
+        const existing = await tx.get(codeRef);
+        if (!existing.exists) break;
+        attempts++;
+        if (attempts === 5) throw new HttpsError("internal", "Could not generate unique code.");
+      }
+
+      tx.set(codeRef, {
+        plan: "full",
+        used: false,
+        email: submissionEmail,
+        createdBy: "admin-approve",
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
+      tx.update(subRef, {
+        status: "APPROVED",
+        reviewedAt: FieldValue.serverTimestamp(),
+        reviewedBy: request.auth.uid,
+        codeIssued: code,
+      });
+    });
+
+    // Email customer — non-fatal if Resend fails
+    try {
+      const { Resend } = require("resend");
+      const resend = new Resend(RESEND_API_KEY.value());
+      await resend.emails.send({
+        from: "IBForge <hello@ibforge.in>",
+        to: submissionEmail,
+        subject: "Your IBForge access code",
+        text: [
+          "Welcome to IBForge.",
+          "",
+          "Your full-access code:",
+          "",
+          `    ${code}`,
+          "",
+          `Redeem at https://ibforge.in/access — sign in with the same email (${submissionEmail}) and enter the code.`,
+          "",
+          "All 14 modules unlock. Single-use code, tied to this email.",
+          "",
+          "Refund window: 7 days from today.",
+          "Refund or support: hello@ibforge.in",
+          "",
+          "— IBForge",
+        ].join("\n"),
+      });
+    } catch (err) {
+      logger.error("[approveSubmission] Resend failed:", err.message);
+    }
+
+    logger.info(`[approveSubmission] approved submissionId=${submissionId} code=${code}`);
+    return { success: true, code };
+  }
+);
+
+// ─── rejectSubmission ─────────────────────────────────────────────────────────
+// Callable — admin only. Rejects a pending submission and emails the customer.
+exports.rejectSubmission = onCall(
+  {
+    region: "asia-south2",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: [RESEND_API_KEY],
+    enforceAppCheck: false,
+  },
+  async (request) => {
+    const adminUid = process.env.IBFORGE_ADMIN_UID;
+    if (!request.auth) throw new HttpsError("unauthenticated", "Sign in required.");
+    if (request.auth.uid !== adminUid) throw new HttpsError("permission-denied", "Not authorised.");
+
+    const { submissionId, reason } = request.data;
+    if (typeof submissionId !== "string" || submissionId.length === 0) {
+      throw new HttpsError("invalid-argument", "submissionId required.");
+    }
+    const rejectReason =
+      typeof reason === "string" && reason.trim().length > 0
+        ? reason.trim()
+        : "Could not verify the payment details provided.";
+
+    const db = admin.firestore();
+    let submissionEmail;
+    let submissionName;
+
+    await db.runTransaction(async (tx) => {
+      const subRef = db.collection("submissions").doc(submissionId);
+      const subSnap = await tx.get(subRef);
+      if (!subSnap.exists) throw new HttpsError("not-found", "Submission not found.");
+      const sub = subSnap.data();
+      if (sub.status !== "PENDING") {
+        throw new HttpsError("failed-precondition", `Submission is already ${sub.status}.`);
+      }
+      submissionEmail = sub.email;
+      submissionName = sub.name;
+      tx.update(subRef, {
+        status: "REJECTED",
+        rejectReason,
+        reviewedAt: FieldValue.serverTimestamp(),
+        reviewedBy: request.auth.uid,
+      });
+    });
+
+    try {
+      const { Resend } = require("resend");
+      const resend = new Resend(RESEND_API_KEY.value());
+      await resend.emails.send({
+        from: "IBForge <hello@ibforge.in>",
+        to: submissionEmail,
+        subject: "IBForge submission — could not verify",
+        text: [
+          `Hi ${submissionName},`,
+          "",
+          "We couldn't verify your IBForge submission.",
+          "",
+          `Reason: ${rejectReason}`,
+          "",
+          "Most common fix: re-submit with a clearer screenshot showing the UPI transaction reference, amount (₹2,499), and recipient (Rirtak Manna — 7906949133@kotakbank).",
+          "",
+          "Submit again at https://ibforge.in/#pricing.",
+          "",
+          "Questions: hello@ibforge.in",
+          "",
+          "— IBForge",
+        ].join("\n"),
+      });
+    } catch (err) {
+      logger.error("[rejectSubmission] Resend failed:", err.message);
+    }
+
+    logger.info(`[rejectSubmission] rejected submissionId=${submissionId}`);
+    return { success: true };
+  }
+);
+
+// ─── mintManualCode ───────────────────────────────────────────────────────────
+// Callable — admin only. Mints a code without a submission (gifting, direct sales).
+exports.mintManualCode = onCall(
+  {
+    region: "asia-south2",
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    secrets: [RESEND_API_KEY],
+    enforceAppCheck: false,
+  },
+  async (request) => {
+    const adminUid = process.env.IBFORGE_ADMIN_UID;
+    if (!request.auth) throw new HttpsError("unauthenticated", "Sign in required.");
+    if (request.auth.uid !== adminUid) throw new HttpsError("permission-denied", "Not authorised.");
+
+    const { email, plan } = request.data;
+    if (typeof email !== "string" || email.length === 0) {
+      throw new HttpsError("invalid-argument", "email required.");
+    }
+    if (plan !== "trial" && plan !== "full") {
+      throw new HttpsError("invalid-argument", 'plan must be "trial" or "full".');
+    }
+
+    const db = admin.firestore();
+    const CODE_CHARS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+    function generateCode() {
+      let s = "";
+      for (let i = 0; i < 4; i++) s += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+      return plan === "trial" ? `IBFORGE-TRIAL-${s}` : `IBFORGE-2026-${s}`;
+    }
+
+    let code;
+    let attempts = 0;
+    while (attempts < 5) {
+      code = generateCode();
+      const existing = await db.collection("access-codes").doc(code).get();
+      if (!existing.exists) break;
+      attempts++;
+      if (attempts === 5) throw new HttpsError("internal", "Could not generate unique code.");
+    }
+
+    await db.collection("access-codes").doc(code).set({
+      plan,
+      used: false,
+      email,
+      createdBy: "admin-manual",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    try {
+      const { Resend } = require("resend");
+      const resend = new Resend(RESEND_API_KEY.value());
+      const isFull = plan === "full";
+      await resend.emails.send({
+        from: "IBForge <hello@ibforge.in>",
+        to: email,
+        subject: isFull ? "Your IBForge access code" : "Your IBForge trial code",
+        text: [
+          "Welcome to IBForge.",
+          "",
+          `Your ${isFull ? "full-access" : "trial"} code:`,
+          "",
+          `    ${code}`,
+          "",
+          `Redeem at https://ibforge.in/access — sign in with Google using this email (${email}) and enter the code.`,
+          "",
+          isFull
+            ? "All 14 modules unlock. Single-use code, tied to this email."
+            : "Your trial unlocks Module 1. Upgrade any time for full access.",
+          "",
+          "Support: hello@ibforge.in",
+          "",
+          "— IBForge",
+        ].join("\n"),
+      });
+    } catch (err) {
+      logger.error("[mintManualCode] Resend failed:", err.message);
+    }
+
+    logger.info(`[mintManualCode] minted code=${code} plan=${plan} email=${email}`);
+    return { success: true, code };
+  }
+);
+
 exports.deleteAccount = onCall(
   {
     timeoutSeconds: 540,
