@@ -22,31 +22,23 @@ service firebase.storage {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // submissions/{submissionId}/{fileName}
-    // UPI payment screenshot uploads. Any authenticated user may
-    // write (they create the submissionId client-side). Admin UID
-    // may read all. Submitter may read their own — but Storage rules
-    // can't query Firestore for the submitter's email, so we allow
-    // read for any authenticated user here and rely on Firestore
-    // rules + /admin UI gating for access control.
-    // 5MB cap. Images only.
+    // submissions/{userId}/{submissionId}/{fileName}
+    // UPI payment screenshot uploads.
+    // Path encodes the uploader's UID so Storage rules can verify
+    // ownership without a Firestore cross-reference.
+    // Owner read/write. Admin read/delete. 5MB cap. Images only.
     // ─────────────────────────────────────────────────────────────
-    match /submissions/{submissionId}/{fileName} {
+    match /submissions/{userId}/{submissionId}/{fileName} {
       allow read:   if request.auth != null
-                    && (request.auth.uid == "REPLACE_WITH_YOUR_ADMIN_UID"
-                        || true);
-                    // NOTE: Storage rules cannot cross-reference Firestore
-                    // to confirm submitter identity. Admin-only read is
-                    // enforced at the /admin UI layer. The `|| true` allows
-                    // authenticated users to read their own upload preview
-                    // in the confirmation UI. Non-admin users never see
-                    // other users' submission IDs (Firestore read rule
-                    // enforces this at the doc level).
+                    && (request.auth.uid == userId
+                        || request.auth.uid == "EkrdYX5YxEe23ObfGno7m8duqEx2");
       allow write:  if request.auth != null
+                    && request.auth.uid == userId
                     && request.resource.size < 5 * 1024 * 1024
                     && request.resource.contentType.matches('image/.*');
       allow delete: if request.auth != null
-                    && request.auth.uid == "REPLACE_WITH_YOUR_ADMIN_UID";
+                    && (request.auth.uid == userId
+                        || request.auth.uid == "EkrdYX5YxEe23ObfGno7m8duqEx2");
     }
   }
 }

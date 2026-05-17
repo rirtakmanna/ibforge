@@ -811,9 +811,9 @@ function Landing() {
 
       // ── Upload screenshot to Storage ────────────────────────────
       const submissionId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const storageRef = ref(storage, `submissions/${submissionId}/${screenshot.name}`);
+      const storageRef = ref(storage, `submissions/${user.uid}/${submissionId}/${screenshot.name}`);
       await uploadBytes(storageRef, screenshot);
-      const screenshotPath = `submissions/${submissionId}/${screenshot.name}`;
+      const screenshotPath = `submissions/${user.uid}/${submissionId}/${screenshot.name}`;
 
       // ── Write Firestore doc ─────────────────────────────────────
       await addDoc(collection(db, "submissions"), {
