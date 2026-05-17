@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="./public/atlas-favicon.svg" alt="ATLAS Logo" width="80" height="80">
-  <h1>ATLAS</h1>
-  <p><em>An execution-enforced IB Analyst Training OS</em></p>
+  <img src="./public/atlas-favicon.svg" alt="IBForge Logo" width="80" height="80">
+  <h1>IBForge</h1>
+  <p><em>A structured path from financial data work to a 10-model IB portfolio.</em></p>
 
   [![License][license-shield]][license-url]
   [![CI][ci-shield]][ci-url]
@@ -27,6 +27,8 @@
 - [Getting Started](#getting-started)
 - [Screenshots](#screenshots)
 - [Roadmap](#roadmap)
+- [For Prospective Customers](#for-prospective-customers)
+- [For Prospective Employers](#for-prospective-employers)
 - [Contributing](#contributing)
 - [License](#license)
 - [Author](#author)
@@ -36,7 +38,7 @@
 
 ## About the Project
 
-ATLAS is a personal execution OS for IB Analyst training. Roadmap steps are locked in sequence. Deliverables must be uploaded before a step completes. LinkedIn posts are generated from real work and scheduled automatically. The product is shipped, the progress is real, and every step completed is evidence of execution capability.
+IBForge is a personal execution OS for IB Analyst training. I built it because every other system I tried — spreadsheet trackers, Notion workspaces, course dashboards — had the same flaw: nothing stopped me from marking something done without doing it. IBForge enforces the work. Roadmap steps are locked in sequence. Deliverables must be uploaded before a step completes. LinkedIn posts are generated from actual completed work and scheduled automatically. The product is shipped, the progress is real, and every step completed is evidence of execution capability.
 
 Work only counts when it exists.
 
@@ -44,10 +46,10 @@ Work only counts when it exists.
 |----------|---------|
 | Spreadsheet tracker | No enforcement. Mark complete without doing the work. |
 | Notion workspace | No gate. No sequential lock. Posts are manual. |
-| ATLAS | Steps unlock only when the previous is complete. Deliverables must be uploaded. Posts are generated from real work and scheduled automatically. |
+| IBForge | Steps unlock only when the previous is complete. Deliverables must be uploaded. Posts are generated from real work and scheduled automatically. |
 
 <p align="center">
-  <img src="./docs/screenshots/01-dashboard.png" alt="ATLAS Dashboard — current position, overall progress, next step, and Roadshow Status" width="100%">
+  <img src="./docs/screenshots/01-dashboard.png" alt="IBForge Dashboard — current position, overall progress, next step, and Roadshow Status" width="100%">
 </p>
 
 ---
@@ -60,29 +62,31 @@ Work only counts when it exists.
 - Auto-scheduled LinkedIn posts — completing a company step schedules its posts into the Calendar automatically
 - Gemini-generated post content — LinkedIn posts reference actual uploaded deliverables
 - Portfolio — every uploaded deliverable, downloadable, per step
+- Access control — trial and paid tiers, manual UPI payment intake, admin approval console
 
 ---
 
 ## Tech Stack
 
-| Layer       | Technology                                     |
-| ----------- | ---------------------------------------------- |
-| Frontend    | React 18, Vite, React Router v6, Framer Motion |
-| Styling     | Custom CSS design system (ATLAS brand tokens)  |
-| Backend     | Firebase (Auth, Firestore, Storage)            |
-| AI          | Gemini API — LinkedIn post generation          |
-| Deployment  | Netlify                                        |
-| Development | Claude Project (Anthropic Claude)              |
+| Layer       | Technology                                      |
+| ----------- | ----------------------------------------------- |
+| Frontend    | React 18, Vite, React Router v6, Framer Motion  |
+| Styling     | Custom CSS design system (IBForge brand tokens) |
+| Backend     | Firebase (Auth, Firestore, Storage, Functions)  |
+| AI          | Gemini 2.5 Flash Lite — Company Generator + LinkedIn post generation |
+| Email       | Resend (transactional), ImprovMX (forwarding)   |
+| Deployment  | Netlify (hosting + custom domain)               |
+| Development | Claude Project (Anthropic Claude)               |
 
 ---
 
 ## Architecture
 
-**Layer A — Engine (AI-Owned).** React application: components, routing, state, Firebase, Gemini. Built and maintained by Claude Project (Anthropic Claude). Not hand-edited. Claude Code is used once, in Phase 4B, for a read-only hardening audit.
+**Layer A — Engine (AI-Owned).** React application: components, routing, state, Firebase, Gemini. Built and maintained by Claude Project (Anthropic Claude). Not hand-edited. Claude Code used once, in Phase 4B, for a read-only hardening audit.
 
 **Layer B — Data (User-Owned).** `src/data/roadmapData.js` and `src/data/companiesData.js`. Editable by the operator at any time. Claude Project may emit value-level patches to these files but never changes their schema, key names, or structure without operator approval.
 
-**Layer C — Operator Workflow.** Running the dev server, verifying behavioral checklists, git commits, Netlify deploys. No code required.
+**Layer C — Operator Workflow.** Running the dev server, verifying behavioral checklists, git commits, Netlify deploys. No code required from the operator.
 
 ```mermaid
 graph TD
@@ -90,47 +94,64 @@ graph TD
     A -->|runs dev server, git, deploys| C[Engine — Layer A]
     B -->|roadmapData.js, companiesData.js| C
     C -->|React app, Firebase, Gemini| D[Netlify — Live Site]
-    C -->|dataService.js only| E[Firebase Storage]
+    C -->|dataService.js only| E[Firebase Storage + Firestore]
+    C -->|Cloud Functions| F[Resend — Transactional Email]
 ```
 
-`dataService.js` abstraction — when Firebase replaces localStorage, only this one file changes. Zero component rewrites.
+`dataService.js` is the sole abstraction layer — it is the only file that reads or writes state. When Firebase replaced localStorage, only this one file changed. Zero component rewrites.
 
 ---
 
 ## Project Structure
+
 ```
-atlas/
+ibforge/
 ├── public/
-│   └── atlas-favicon.svg
+│   ├── atlas-favicon.svg
+│   └── _redirects                  ← Netlify SPA rewrite rule
 ├── src/
 │   ├── components/
+│   │   └── admin/                  ← Admin-only components (SubmissionRow, CodesTable, ScreenshotModal)
 │   ├── pages/
 │   ├── data/
-│   │   ├── roadmapData.js      ← user-editable
-│   │   └── companiesData.js    ← user-editable
+│   │   ├── roadmapData.js          ← user-editable, never regenerated by AI
+│   │   └── companiesData.js        ← user-editable, never regenerated by AI
 │   ├── utils/
-│   │   └── dataService.js      ← only file that touches storage
+│   │   └── dataService.js          ← only file that touches storage
 │   └── styles/
+├── functions/                      ← Firebase Cloud Functions (Node 20)
+│   ├── index.js                    ← claimCode, issueTrialCode, approveSubmission, rejectSubmission, mintManualCode
+│   └── .env                        ← IBFORGE_ADMIN_UID (gitignored)
+├── netlify/
+│   └── functions/
+│       └── gemini.js               ← Gemini serverless proxy (API key never in client bundle)
+├── scripts/                        ← seed and admin utility scripts
 ├── docs/
-│   └── screenshots/            ← added Phase 4
+│   └── screenshots/
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   ├── workflows/
+│   │   └── ci.yml
 │   ├── dependabot.yml
 │   └── PULL_REQUEST_TEMPLATE.md
-├── .env.example                ← copy to .env and fill in keys
+├── .env.example                    ← key names only, no values (committed)
+├── .firebaserc
+├── firestore.rules
+├── storage.rules
+├── firestore.indexes.json
 ├── CONTRIBUTING.md
 ├── CODE_OF_CONDUCT.md
 ├── SECURITY.md
 └── README.md
 ```
+
 ---
 
 ## Getting Started
 
 **Prerequisites**
 
-- Node 18+
+- Node 20+
 - Git
 - Firebase project (if cloning for personal use)
 - Gemini API key
@@ -138,8 +159,8 @@ atlas/
 **Installation**
 
 ```bash
-git clone https://github.com/rirtakmanna/atlas.git
-cd atlas
+git clone https://github.com/rirtakmanna/ibforge.git
+cd ibforge
 npm install
 cp .env.example .env
 # Fill in .env with your Firebase and Gemini keys
@@ -154,8 +175,6 @@ npm run build
 ```
 
 ---
-
-## Screenshots
 
 ## Screenshots
 
@@ -195,8 +214,37 @@ Completing a company step schedules its LinkedIn posts onto the Calendar at thei
 
 ## Roadmap
 
-- Build phases 0–4: Core app scaffold, Firebase integration, Gemini post generation, Netlify deployment — in progress
+- Build phases 0–4C: Core app scaffold, Firebase integration, Gemini post generation, Netlify deployment, paid access layer, admin console — complete
+- Phase 4D: Hardening pass — in progress
 - Planned: Mobile app wrapper, additional company templates
+
+---
+
+## For Prospective Customers
+
+IBForge is a structured 14-module curriculum that builds the portfolio you can show in interviews. Each module learns first, applies on a real listed company, and delivers a model or analysis as a concrete file.
+
+- **Trial:** free Module 1 — request a code at [ibforge.in](https://ibforge.in)
+- **Full access:** ₹2,499 one-time (early access pricing for first 20 customers: ₹1,699)
+- **Refund window:** 7 days, no questions asked
+- **Contact:** [hello@ibforge.in](mailto:hello@ibforge.in)
+
+---
+
+## For Prospective Employers
+
+This repository demonstrates end-to-end product execution built independently, including:
+
+- Single-tool AI engineering workflow (Claude Project as architect and engineer, operator as builder)
+- Atomic Firestore transactions for payment approval
+- Firebase Cloud Function security (UID-gated admin callables, Secret Manager for API keys)
+- Manual payment intake without a payment processor — UTR verification, admin approval, code generation
+- Brand system implementation from a written spec — no Tailwind, no component library, custom CSS design tokens throughout
+- Responsive layout at three breakpoints with no hamburger menu
+
+Phase-by-phase commit history shows incremental shipping discipline. Each phase ends with a passing 6-category behavioral checklist before any commit is made.
+
+**Note on naming:** Early commits reference the project as "ATLAS" — its working title during the personal-build phase. The project rebranded to IBForge when commercial launch began in Phase 4A. This history is preserved deliberately; rewriting it would destroy the evidentiary trail.
 
 ---
 
@@ -208,7 +256,9 @@ This is a personal build. Bug reports and feature suggestions are welcome via Gi
 
 ## License
 
-MIT — see [LICENSE][license-url]
+© 2026 Rirtak Manna. All rights reserved.
+
+This is a commercial product. The source code is published for portfolio and transparency purposes. No license is granted for reuse, redistribution, or derivative works. Contact [hello@ibforge.in](mailto:hello@ibforge.in) for licensing inquiries.
 
 ---
 
@@ -227,14 +277,14 @@ MIT — see [LICENSE][license-url]
 
 ---
 
-[license-shield]: https://img.shields.io/github/license/rirtakmanna/atlas?style=flat-square
+[license-shield]: https://img.shields.io/badge/license-All%20Rights%20Reserved-red?style=flat-square
 [license-url]: ./LICENSE
-[ci-shield]: https://github.com/rirtakmanna/atlas/actions/workflows/ci.yml/badge.svg
-[ci-url]: https://github.com/rirtakmanna/atlas/actions/workflows/ci.yml
+[ci-shield]: https://github.com/rirtakmanna/ibforge/actions/workflows/ci.yml/badge.svg
+[ci-url]: https://github.com/rirtakmanna/ibforge/actions/workflows/ci.yml
 [demo-shield]: https://img.shields.io/badge/live-demo-success?style=flat-square
-[demo-url]: https://atlas-rirtak.netlify.app
-[commit-shield]: https://img.shields.io/github/last-commit/rirtakmanna/atlas?style=flat-square
-[commit-url]: https://github.com/rirtakmanna/atlas/commits
+[demo-url]: https://ibforge.in
+[commit-shield]: https://img.shields.io/github/last-commit/rirtakmanna/ibforge?style=flat-square
+[commit-url]: https://github.com/rirtakmanna/ibforge/commits
 [react-shield]: https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react
 [react-url]: https://react.dev
 [vite-shield]: https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white
@@ -243,4 +293,4 @@ MIT — see [LICENSE][license-url]
 [firebase-url]: https://firebase.google.com
 [framer-shield]: https://img.shields.io/badge/Framer_Motion-0055FF?style=flat-square&logo=framer&logoColor=white
 [framer-url]: https://www.framer.com/motion/
-[bug-url]: https://github.com/rirtakmanna/atlas/issues/new?template=bug_report.yml
+[bug-url]: https://github.com/rirtakmanna/ibforge/issues/new?template=bug_report.yml
