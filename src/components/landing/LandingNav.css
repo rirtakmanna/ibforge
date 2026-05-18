@@ -158,6 +158,10 @@
 }
 
 /* ─── Mobile (<768px) ─────────────────────────────────────────────────── */
+/* Pattern matches the authenticated Dashboard nav: logo collapses to the
+   animated icon mark (no wordmark), Sign In becomes icon-only (Google G),
+   Get Access stays as text. Avoids two-line CTA wrap inside the 56px bar
+   that was visible at 375px width. */
 
 @media (max-width: 767px) {
   .landing-nav {
@@ -169,20 +173,36 @@
     gap: var(--space-sm);
   }
 
+  /* Logo: hide the "IBForge" wordmark — icon mark only on mobile */
   .landing-nav-word {
-    font-size: 18px;
-  }
-
-  /* "I have a code" hides on mobile — primary CTA is what matters here.
-     The secondary CTA is reachable from the pricing section directly. */
-  .landing-nav-cta--ghost {
     display: none;
   }
 
-  .landing-nav-cta {
+  /* Sign In: icon-only. Hide the trailing text node via a font-size
+     trick — the Google <svg> has its own explicit width/height and is
+     unaffected. Keep the ghost outline (not a solid fill) so it reads
+     as the secondary action next to the primary "Get access". */
+  .landing-nav-cta--ghost {
+    font-size: 0;
+    width: 40px;
+    padding: 0;
+  }
+
+  .landing-nav-cta--ghost .login-google-icon {
+    margin: 0;
+  }
+
+  /* Get Access: text only, tighter padding to fit on one line */
+  .landing-nav-cta--primary {
     height: 36px;
     padding: 0 var(--space-md);
     font-size: 12px;
+    white-space: nowrap;
+  }
+
+  /* Match the ghost button height to the primary */
+  .landing-nav-cta--ghost {
+    height: 36px;
   }
 }
 
