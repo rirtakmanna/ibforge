@@ -940,23 +940,25 @@ function Landing() {
                 variants={arcPathVariantsActive}
               />
 
-              {/* 14 dots — each inherits the parent's staggerChildren (50ms)
-                  + delayChildren (240ms). Coordinates pre-calculated to sit
-                  ON the path (sampled at t = 0, 1/13, 2/13 ... 13/13).
-                  Last dot is slightly larger to emphasize the M14 endpoint. */}
+              {/* 14 dots — coordinates computed from the cubic Bézier above
+                  via B(t) = (1-t)³P₀ + 3(1-t)²t·P₁ + 3(1-t)t²·P₂ + t³·P₃
+                  with P₀=(40,160), P₁=(220,160), P₂=(380,130), P₃=(660,40),
+                  sampled at t = 0, 1/13, 2/13, ..., 13/13. Each dot now sits
+                  exactly on the curve. Last dot slightly larger to emphasize
+                  the M14 endpoint. */}
               <motion.circle cx="40"  cy="160" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="88"  cy="159" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="136" cy="156" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="184" cy="152" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="231" cy="147" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="279" cy="141" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="327" cy="133" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="374" cy="124" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="422" cy="113" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="469" cy="100" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="517" cy="86"  r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="565" cy="70"  r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
-              <motion.circle cx="612" cy="54"  r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="81"  cy="159" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="122" cy="158" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="163" cy="155" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="205" cy="151" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="247" cy="145" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="290" cy="138" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="335" cy="129" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="382" cy="119" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="432" cy="107" r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="484" cy="93"  r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="539" cy="77"  r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
+              <motion.circle cx="597" cy="60"  r="4" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
               <motion.circle cx="660" cy="40"  r="6" fill="var(--color-electric-blue)" variants={arcDotVariantsActive} />
 
               {/* Labels — endpoint anchors only. JetBrains Mono terminal style.
