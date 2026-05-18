@@ -1,176 +1,693 @@
 /* src/pages/Dashboard.css
  *
- * Dashboard — APPROVED DESIGN (Chat 1, binding; see CHAT_HANDOFF.md).
+ * Dashboard — Cockpit redesign (Phase 5 issue #1).
  *
- *   Row 1 — 25fr / 75fr
- *     Left:  PositionCard
- *     Right: ExecutionProgressCard
+ * Layout: 5-band vertical stack. Replaces the prior 25/75 + 75/25 grid.
  *
- *   Row 2 — 75fr / 25fr
- *     Left:  Module Progress (header strip + PhaseProgressList)
- *     Right: NextStepCard (content-sized — align-self: start)
+ *   Band A — Header bar       (IBFORGE // SYSTEM STATUS + live clock)
+ *   Band B — Position + Active  (split row, 380px / flex-1)
+ *   Band C — Module Status    (14-row table with status chips)
+ *   Band D — Queue            (next 3 unlocked steps)
+ *   Band E — Output           (4 monotonic counters in 2x2 grid)
  *
- * Tablet (768–1023px): Row 1 stays 25/75. Row 2 splits vertically:
- *   NextStepCard full-width directly under Row 1, then Module Progress full-width below.
+ * Tablet (768–1023px):
+ *   - Band B panels stack vertically (both full-width)
+ *   - Band C rows drop the "LOCKED / IN PROGRESS / COMPLETE" chip text;
+ *     symbol stays with aria-label fallback
  *
- * Mobile (<768px): single column stack —
- *   Current Position → Execution Progress → Next Step → Module Progress.
+ * Mobile (<768px):
+ *   - Band A stacks into two lines
+ *   - Band B M-code drops from 48px to 36px
+ *   - Band C rows reflow to 3-line cards (M-code+symbol, title, bar+count)
+ *   - Band E counters flip to single-column vertical stack
  *
- * Removed: the Phase 1 "EXECUTION STATUS" section-title strip. Its
- * section-identifier role is now played by ExecutionProgressCard's
- * internal "EXECUTION PROGRESS" label.
- *
- * Sharp corners only. Brand tokens only.
+ * Sharp corners only. Brand tokens only. No hex codes, no inline styles.
  */
 
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
   width: 100%;
 }
 
 /* ──────────────────────────────────────────────────────────────
- * Row 1 — Position (25fr) | Execution Progress (75fr)
+ * Band A — Header bar (IBFORGE // SYSTEM STATUS + live clock)
  * ────────────────────────────────────────────────────────────── */
 
-.dashboard-row1 {
-  display: grid;
-  grid-template-columns: 25fr 75fr;
-  gap: var(--space-xl);
-  align-items: stretch; /* PositionCard + ExecutionProgressCard match height */
-}
-
-.dashboard-row1-position {
-  min-width: 0; /* prevents grid blowout when child content demands width */
-}
-
-.dashboard-row1-progress {
-  min-width: 0;
-}
-
-/* ──────────────────────────────────────────────────────────────
- * Row 2 — Module Progress (75fr) | NextStepCard (25fr)
- * ────────────────────────────────────────────────────────────── */
-
-.dashboard-row2 {
-  display: grid;
-  grid-template-columns: 75fr 25fr;
-  gap: var(--space-xl);
-  align-items: start; /* NextStepCard never stretches to match list height */
-}
-
-.dashboard-row2-modules {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: 0;
-}
-
-.dashboard-row2-next {
-  min-width: 0;
-}
-
-/* ──────────────────────────────────────────────────────────────
- * Module Progress — card-header bar (label left + jump link right)
- *   Matches Brand System §Step Card pattern: header strip with
- *   bottom border, body sits below at bg-primary.
- * ────────────────────────────────────────────────────────────── */
-
-.dashboard-modules-header {
+.dashboard-band-a {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
-  background: var(--color-bg-secondary);
+  padding: var(--space-md) 0;
   border-bottom: 1px solid var(--color-border);
 }
 
-/* ──────────────────────────────────────────────────────────────
- * Module Progress — card body (recessed against the header strip)
- *   PhaseProgressList sits inside here. Its items keep their own
- *   bg-secondary so they pop against this bg-primary body.
- * ────────────────────────────────────────────────────────────── */
-
-.dashboard-modules-body {
-  padding: var(--space-lg);
-  background: var(--color-bg-primary);
-}
-
-.dashboard-modules-label {
+.dashboard-band-a-label,
+.dashboard-band-a-clock {
   font-family: var(--font-mono);
   font-weight: 400;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.4;
   color: var(--color-text-secondary);
   letter-spacing: var(--tracking-widest);
   text-transform: uppercase;
 }
 
-.dashboard-modules-jump {
+.dashboard-band-a-clock {
+  letter-spacing: var(--tracking-wide);
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Band B — Position (380px) + Active (flex-1) split row
+ * ────────────────────────────────────────────────────────────── */
+
+.dashboard-band-b {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+  align-items: stretch;
+}
+
+.dashboard-band-b-position,
+.dashboard-band-b-active {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dashboard-band-b-position {
+  flex: 0 0 380px;
+  justify-content: space-between;
+  border-left: 2px solid var(--color-electric-blue-35);
+}
+
+.dashboard-band-b-active {
+  flex: 1 1 auto;
+}
+
+/* ── Band B left: POSITION ── */
+
+.dashboard-position-mcode {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 48px;
+  line-height: 1;
+  color: var(--color-electric-blue);
+  letter-spacing: var(--tracking-tighter);
+}
+
+.dashboard-position-mcode-empty {
+  color: var(--color-success-green);
+  font-size: 24px;
+}
+
+.dashboard-position-divider {
+  width: 32px;
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--space-sm) 0 var(--space-md) 0;
+}
+
+.dashboard-position-counter,
+.dashboard-position-percent {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+.dashboard-position-bar-track {
+  width: 100%;
+  height: 4px;
+  background: var(--color-border);
+  margin-top: var(--space-lg);
+  overflow: hidden;
+}
+
+.dashboard-position-bar-fill {
+  height: 100%;
+  background: var(--color-electric-blue);
+  transform-origin: left center;
+}
+
+.dashboard-position-bar-fill-complete {
+  background: var(--color-success-green);
+}
+
+/* ── Band B right: ACTIVE ── */
+
+.dashboard-active-label {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  margin-bottom: var(--space-md);
+}
+
+.dashboard-active-label-complete {
+  color: var(--color-success-green);
+}
+
+.dashboard-active-title {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dashboard-active-meta {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+  margin-bottom: var(--space-lg);
+}
+
+.dashboard-active-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: var(--color-electric-blue);
+  color: var(--color-black);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--duration-base) linear;
+  align-self: flex-start;
+}
+
+.dashboard-active-cta:hover {
+  background: var(--color-electric-blue-hover);
+}
+
+.dashboard-active-cta:active {
+  background: var(--color-electric-blue-active);
+}
+
+.dashboard-active-cta:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: 2px;
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Band C — Module Status (14-row table)
+ * ────────────────────────────────────────────────────────────── */
+
+.dashboard-band-c {
+  margin-top: var(--space-xl);
+}
+
+.dashboard-band-c .dashboard-band-section-header {
+  padding-bottom: var(--space-md);
+}
+
+.dashboard-modules-list {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.dashboard-band-section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg) 0 var(--space-sm) 0;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+.dashboard-band-section-header::before,
+.dashboard-band-section-header::after {
+  content: "";
+  height: 1px;
+  background: var(--color-border);
+}
+
+.dashboard-band-section-header::before {
+  width: 16px;
+  flex: 0 0 auto;
+}
+
+.dashboard-band-section-header::after {
+  flex: 1 1 auto;
+}
+
+.dashboard-modules-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-module-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  height: 36px;
+  padding: 0 var(--space-sm);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color var(--duration-base) linear;
+}
+
+.dashboard-module-row:last-child {
+  border-bottom: none;
+}
+
+.dashboard-module-row:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.dashboard-module-row:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: -2px;
+}
+
+.dashboard-module-code {
+  flex: 0 0 56px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--color-electric-blue);
+}
+
+.dashboard-module-title {
+  flex: 1 1 auto;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-module-bar-track {
+  flex: 0 0 120px;
+  height: 3px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.dashboard-module-bar-fill {
+  height: 100%;
+  background: var(--color-electric-blue);
+  transform-origin: left center;
+}
+
+.dashboard-module-bar-fill-complete {
+  background: var(--color-success-green);
+}
+
+.dashboard-module-count {
+  flex: 0 0 56px;
+  text-align: right;
   font-family: var(--font-mono);
   font-weight: 400;
   font-size: 12px;
-  line-height: 1.4;
-  color: var(--color-electric-blue);
-  letter-spacing: var(--tracking-wide);
-  text-decoration: none;
-  transition: color 150ms linear;
-  white-space: nowrap;
+  line-height: 1;
+  color: var(--color-text-secondary);
 }
 
-.dashboard-modules-jump:hover {
+.dashboard-module-chip {
+  flex: 0 0 140px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-module-chip-symbol {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.dashboard-module-chip-locked {
+  color: var(--color-text-secondary);
+}
+
+.dashboard-module-chip-progress {
+  color: var(--color-electric-blue);
+}
+
+.dashboard-module-chip-complete {
+  color: var(--color-success-green);
+}
+
+/* ──────────────────────────────────────────────────────────────
+ * Band D — Queue (next 3 unlocked steps)
+ * ────────────────────────────────────────────────────────────── */
+
+.dashboard-band-d {
+  margin-top: var(--space-xl);
+}
+
+.dashboard-band-d .dashboard-band-section-header {
+  padding-bottom: var(--space-md);
+}
+
+.dashboard-queue-list,
+.dashboard-queue-empty {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-xl);
+}
+
+.dashboard-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  padding-top: var(--space-sm);
+}
+
+.dashboard-queue-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  text-decoration: none;
+  padding: var(--space-sm) var(--space-sm);
+  transition: background-color var(--duration-base) linear;
+}
+
+.dashboard-queue-row:hover {
+  background: var(--color-bg-tertiary);
+}
+
+.dashboard-queue-row:hover .dashboard-queue-title {
+  color: var(--color-electric-blue);
+}
+
+.dashboard-queue-row:focus-visible {
+  outline: 2px solid var(--color-electric-blue);
+  outline-offset: -2px;
+}
+
+.dashboard-queue-marker {
+  flex: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-electric-blue);
+}
+
+.dashboard-queue-code {
+  flex: 0 0 80px;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-electric-blue);
+}
+
+.dashboard-queue-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dashboard-queue-title {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--duration-base) linear;
+}
+
+.dashboard-queue-subtitle {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-queue-type {
+  flex: 0 0 80px;
+  text-align: right;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.dashboard-queue-type-build {
+  color: var(--color-electric-blue);
+}
+
+.dashboard-queue-empty {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: var(--space-xl) 0;
+}
+
+.dashboard-queue-empty a {
+  color: var(--color-electric-blue);
+  text-decoration: none;
+}
+
+.dashboard-queue-empty a:hover {
   color: var(--color-electric-blue-hover);
 }
 
-.dashboard-modules-jump:active {
-  color: var(--color-electric-blue-active);
+/* ──────────────────────────────────────────────────────────────
+ * Band E — Output (4 monotonic counters)
+ * ────────────────────────────────────────────────────────────── */
+
+.dashboard-band-e {
+  margin-top: var(--space-xl);
+  margin-bottom: var(--space-2xl);
+}
+
+.dashboard-band-e .dashboard-band-section-header {
+  padding-bottom: var(--space-md);
+}
+
+.dashboard-output-grid {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-xl);
+  gap: var(--space-md) var(--space-3xl);
+}
+.dashboard-output-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md) var(--space-3xl);
+  padding-top: var(--space-sm);
+}
+
+.dashboard-output-cell {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.dashboard-output-label {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-secondary);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+.dashboard-output-value {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-text-primary);
 }
 
 /* ──────────────────────────────────────────────────────────────
- * Tablet (768–1023px) — Row 1 unchanged (25/75 holds).
- *   Row 2 splits vertically: NextStepCard above, Module Progress below.
+ * Tablet (768–1023px)
  * ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 1023px) {
-  .dashboard-row2 {
-    grid-template-columns: 1fr;
-    gap: var(--space-lg);
+  .dashboard-band-b {
+    flex-direction: column;
+    gap: var(--space-md);
   }
-  .dashboard-row2-next {
-    order: 1;
+
+  .dashboard-band-b-position {
+    flex: 1 1 auto;
   }
-  .dashboard-row2-modules {
-    order: 2;
+
+  .dashboard-module-chip-label {
+    display: none;
+  }
+
+  .dashboard-module-chip {
+    flex: 0 0 24px;
   }
 }
 
 /* ──────────────────────────────────────────────────────────────
- * Mobile (<768px) — single column stack:
- *   Position → Execution Progress → Next Step → Module Progress
+ * Mobile (<768px)
  * ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 767px) {
-  .dashboard {
-    gap: var(--space-lg);
+  .dashboard-band-a {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
   }
 
-  .dashboard-row1 {
+  .dashboard-band-b {
+    margin-top: var(--space-lg);
+  }
+
+  .dashboard-band-b-position,
+  .dashboard-band-b-active {
+    padding: var(--space-lg);
+  }
+
+  .dashboard-position-mcode {
+    font-size: 36px;
+  }
+
+  .dashboard-active-title {
+    font-size: 18px;
+  }
+
+  .dashboard-active-cta {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .dashboard-band-c,
+  .dashboard-band-d,
+  .dashboard-band-e {
+    margin-top: var(--space-xl);
+  }
+
+  /* Mobile module rows: 3-line card */
+  .dashboard-module-row {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 64px;
+    padding: var(--space-sm);
+    column-gap: var(--space-md);
+    row-gap: var(--space-xs);
+  }
+
+  .dashboard-module-code {
+    flex: 0 0 auto;
+    order: 1;
+  }
+
+  .dashboard-module-chip {
+    flex: 1 1 auto;
+    order: 2;
+    justify-content: flex-end;
+  }
+
+  .dashboard-module-title {
+    flex: 1 1 100%;
+    order: 3;
+    font-size: 12px;
+  }
+
+  .dashboard-module-bar-track {
+    flex: 1 1 auto;
+    order: 4;
+  }
+
+  .dashboard-module-count {
+    flex: 0 0 auto;
+    order: 5;
+  }
+
+  /* Mobile queue: stack code on its own line above title */
+  .dashboard-queue-row {
+    flex-wrap: wrap;
+    row-gap: var(--space-xs);
+  }
+
+  .dashboard-queue-type {
+    order: 2;
+  }
+
+  .dashboard-queue-content {
+    flex: 1 1 100%;
+    order: 3;
+  }
+
+  /* Mobile output: single-column vertical stack */
+  .dashboard-output-grid {
     grid-template-columns: 1fr;
-    gap: var(--space-lg);
-  }
-  /* Row 1 source order is already Position → Execution Progress, no reorder needed */
-
-  /* Row 2 keeps its tablet stacking — Next Step above Module Progress */
-
-  .dashboard-modules-header {
-    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
   }
 
-  .dashboard-modules-body {
-    padding: var(--space-md);
+  .dashboard-output-cell {
+    padding: var(--space-xs) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .dashboard-output-cell:last-child {
+    border-bottom: none;
+  }
+
+  .dashboard-band-e {
+    margin-bottom: var(--space-2xl);
   }
 }
+
+/* ──────────────────────────────────────────────────────────────
+ * Reduced motion — collapse Framer Motion x-transforms via global
+ *   block in index.css. Local progress-bar scaleX is already a
+ *   transform; Framer Motion's reduced-motion handling collapses it.
+ *   No explicit overrides needed here.
+ * ────────────────────────────────────────────────────────────── */
